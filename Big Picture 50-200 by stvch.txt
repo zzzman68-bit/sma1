@@ -1,0 +1,11 @@
+//@version=4
+study(title="Big Picture 50/200", shorttitle="BP 50/200")
+
+variable = sma(close, 50) - sma(close, 200)
+
+bp =  (variable + variable[1]) / 2
+
+colup = color.teal
+coldown = color.red
+    
+plot(bp, color = change(bp) <= 0 ? coldown : colup, style=plot.style_columns)

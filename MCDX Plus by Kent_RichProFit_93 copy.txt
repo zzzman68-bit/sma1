@@ -1,0 +1,663 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Kent_RichProFit_93
+
+//@version=5
+indicator(title='MCDX Plus', format=format.price, precision =2, overlay=false)
+
+
+///////////////////////////////
+//Revision
+///////////////////////////////
+
+//revision 1, 18Jul21, first published to Tradingview
+//revision 2, 2Aug21, added moving average of profitable, float and locked chips 
+//revision 3, 12Aug21, added oversold and overbought 
+//revision 4, 15Aug21, fixed the bugs of floating chips bar go beyond 100%
+//revision 5, 4Oct21, adjustable table text/size, adjustable locations of bottom catch/oversold/overbought alerts, cosmetic setting arrangement
+//revision 6, 20Oct21, adding source per user request. Pinescript now uses version 5.
+//revision 7, 21Oct21, fixed the bugs on source input, added open, HL2, HLC3, OHLC4
+//revision 8, 24Oct21, allow source input to include user's indicator(not recommended as scripts is developed based on closing price), added fund simulation
+//revision 9, 4Apr22, Update on Input Setting to ease user input. 
+//              Tooltip on Table added. User can move the cursor to each Table Cell to show the description. 
+//              Added Auto MCDX options, enable MCDX starts to show on 3rd day from IPO. Removed MCDX 34-Day options since Auto MCDX added. 
+//              User can use Manual Input to input the MCDX Length as they see fit. Alert will show if user input unacceptable length. 
+//              User can turn on All Chips or Profitable Chips Only, Float Chip Only, Locked Only
+//              User can turn on Simple Moving Average of Profitable Chips, Float Chips, Locked Chips as they see fit. 
+//              Default show Simple Moving Average of Profitable and Locked Chips.
+//              Golden Cross, Death Cross Added. Text Size and Location Adjustable.  Alert Conditions Added
+//              Bottom Catch, Oversold, Overbought Alert Text Size and Location Adjustable. Alert Conditions Added
+//              Bar Number Tooltip of Current Bar. User can move the cursor to current bar to show the bar number. 
+
+//revision 10, add alert conditions of Profitable Chips crossover SMA of Profitable Chips. User can choose the alert at the Creat Alert.  
+
+
+///////////////////////////////
+//Input
+///////////////////////////////
+
+gr1 = 'Table'
+ind = input.bool(title='Show Table', defval=true, inline ='1a', group=gr1)
+text_size = input.string(title='Table Text Size:', options=['AUTO', 'TINY', 'SMALL', 'NORMAL', 'LARGE', 'HUGE'], defval='SMALL', inline='1b', group=gr1)
+w = input.int(title='/ Table Width:', defval=6, minval=4, maxval=20, 
+ tooltip ='Default Size = SMALL, Table Width = 6', inline='1b', group=gr1)
+
+gr2 = 'MCDX Options, Select One'
+mcdx_source = input.source(title='MCDX Source =', defval=close, inline='2', 
+ tooltip='Advisible to use Close', group=gr2)
+mcdx_length = input.string(title='MCDX Length =', options=['Auto', '50-day', '100-day', 'Manual Input'], defval='Auto', inline='2a', group=gr2)
+manual_len = input.int(title='Manual Input = ', defval=100, minval=3, inline='2a', 
+ tooltip ='Advisible to use 100-day options for mature stocks use Auto for newly IPO stocks', group=gr2)
+
+gr3 = 'Plot for PC, FC, LC'
+all_show = input.bool(title='All',defval=true, inline='3', group= gr3)
+pc_show = input.bool(title='PC only', defval=false, inline='3', group=gr3)
+fc_show = input.bool(title='FC only', defval=false, inline='3', group=gr3)
+lc_show = input.bool(title='LC only', defval=false, inline='3', 
+ tooltip='Default will show all. PC = Profitable Chips, FC = Float Chips, LC = Locked Chips', group=gr3)
+
+gr4 = 'SMA Length Input and Plot for PC, FC, LC'
+
+sma_pc_len = input.int(title='SMA PC Length = ', defval=10, minval=1, inline='4a', group=gr4)
+sma_pc_show = input.bool(title='SMA PC Plots', defval=true, inline='4a', 
+ tooltip ='SMA = Simple Moving Average, Default Length =10, PC = Profitable Chips', group=gr4)
+
+sma_fc_len = input.int(title='SMA FC Length = ', defval=10, minval=1, inline='4b', group=gr4)
+sma_fc_show = input.bool(title='SMA FC Plots', defval=false, inline='4b', 
+ tooltip ='SMA = Simple Moving Average, Default Length =10, FC = Float Chips. Click to show plot', group=gr4)
+
+sma_lc_len = input.int(title='SMA LC Length = ', defval=10, minval=1, inline='4c', group=gr4)
+sma_lc_show = input.bool(title='SMA LC Plots', defval=true, inline='4c', 
+ tooltip = 'SMA=Simple Moving Average, Default Length =10, LC = Locked Chips', group=gr4)
+
+gr5 = 'Golden Cross, Death Cross of SMA PC and SMA LC'
+gc_show = input.bool(title='GC,', defval=true,inline='5a', group=gr5)
+gc_label_size = input.string(title='Text Size:', options=['NONE', 'TINY', 'SMALL', 'NORMAL', 'LARGE', 'HUGE'], defval='NORMAL', inline='5a',group=gr5)
+gc_label_offset_v = input.int(title='Up/Down', defval=0, step=1, inline ='5a', group=gr5)
+gc_icon_show = input.bool(title='Icon', defval=false, 
+ tooltip='Golden Cross of SMA Profitable Chips and SMA Locked Chips', inline ='5a', group=gr5)
+
+dc_show = input.bool(title='DC,', defval=true, inline='5b', group=gr5)
+dc_label_size = input.string(title='Text Size:', options=['NONE', 'TINY', 'SMALL', 'NORMAL', 'LARGE', 'HUGE'], defval='NORMAL', inline='5b',group=gr5)
+dc_label_offset_v = input.int(title='Up/Down', defval=0, step=1, inline ='5b', group=gr5)
+dc_icon_show = input.bool(title='Icon', defval=false, 
+ tooltip='Death Cross of SMA Profitable Chips and SMA Locked Chips', inline ='5b', group=gr5)
+
+gr6 = 'Alerts : Bottom Catch (BC) / Oversold (OS) / Overbought (OB)'
+
+bc_show = input.bool(title='BC,',defval=true, inline='6a', group=gr6)
+bc_label_size = input.string(title='Text Size:', options=['NONE', 'TINY', 'SMALL', 'NORMAL', 'LARGE', 'HUGE'], defval='NORMAL', inline='6a',group=gr6)
+bc_label_offset_v = input.int(title='Up/Down', defval=20, step=1, inline='6a',group=gr6)
+bc_icon_show = input.bool(title='Icon', defval=false, 
+ tooltip='Bottom Catch', inline='6a',group=gr6)
+
+os_show = input.bool(title='OS,',defval=true, inline='6b', group=gr6)
+os_label_size = input.string(title='Text Size:', options=['NONE', 'TINY', 'SMALL', 'NORMAL', 'LARGE', 'HUGE'], defval='NORMAL', inline='6b',group=gr6)
+os_label_offset_v = input.int(title='Up/Down', defval=10, step=1, inline='6b',group=gr6)
+os_icon_show = input.bool(title='Icon', defval=false, 
+ tooltip ='Oversold', inline='6b',group=gr6)
+
+ob_show = input.bool(title='OB,',defval=true, inline='6c', group=gr6)
+ob_label_size = input.string(title='Text Size:', options=['NONE', 'TINY', 'SMALL', 'NORMAL', 'LARGE', 'HUGE'], defval='NORMAL', inline='6c',group=gr6)
+ob_label_offset_v = input.int(title='Up/Down', defval=80, step=1, inline='6c',group=gr6)
+ob_icon_show = input.bool(title='Icon', defval=false, 
+ tooltip ='Overbought', inline='6c',group=gr6)
+
+gr7 = 'Funds Simulation Plot'
+fundsim_show = input.bool(title='Fund Simulation, ', defval=false, inline ='7', group=gr7)
+fundsim_color = input.color(title='Color =', defval=color.orange, inline ='7', group=gr7)
+
+gr8 = 'Bands'
+band25_show = input.bool(title='25', defval=false, inline='8', group=gr8)
+band50_show = input.bool(title='50', defval=false, inline='8', group=gr8)
+band75_show = input.bool(title='75', defval=false, inline='8', group=gr8)
+
+
+///////////////////////////////
+//Manual Length Label Alert
+///////////////////////////////
+
+barI = bar_index + 1 
+barN = barI + 1
+manual_len_violate = manual_len>barI
+violate_label_string ='Please input Manual Length < ' + str.tostring(barN,"#")
+
+violate_label = mcdx_length =='Manual Input' and manual_len_violate? label.new(bar_index+3, 50,
+ text=violate_label_string, textcolor=color.red, color=color.red, style=label.style_flag, textalign = text.align_center, size=size.large) :na
+label.delete(violate_label[1])
+
+
+///////////////////////////////
+//Bands
+///////////////////////////////
+
+band75 = hline(band75_show ? 75 : na, title='75', color=color.black, linestyle=hline.style_solid)
+band50 = hline(band50_show ? 50 : na, title='50', color=color.black, linestyle=hline.style_solid)
+band25 = hline(band25_show ? 25 : na, title='25', color=color.black, linestyle=hline.style_solid)
+
+///////////////////////////////
+//Functions
+///////////////////////////////
+
+fmcdx_hoh(X,N) =>
+    hoh = float(na)
+    hoh :=ta.highest(X,N)
+    hoh
+
+fmcdx_lol(X,N)=>
+    lol = float(na)
+    lol:=ta.lowest(X,N)
+    lol
+    
+fmcdx_range(H,L,N) =>
+    mrange = float(na)
+    mrange:= ta.highest(H,N) - ta.lowest(L,N)
+    mrange
+    
+fmcdx_avg(H,L,N)=>
+    avg = float(na)
+    avg := (ta.highest(H,N) + ta.lowest(L,N))/2
+    avg
+
+fmcdx_pc(X,N) =>
+    pcx = float(na)
+    pcx := (X - ta.lowest(low,N))/(ta.highest(high,N) - ta.lowest(low,N))*100  
+    pcx
+    
+fmcdx_fc(X,N) =>
+    fcx = float(na)
+    fcx:= (100-(ta.highest(high,N)-X)/(ta.highest(high,N) - ta.lowest(low,N))*100)+25
+    fcx
+
+fr(X,N) =>
+    rsv = 0.0
+    rsv := (X- ta.lowest(low,N))/(ta.highest(high,N) - ta.lowest(low,N))*100
+    rsv
+
+fY(X,N,M) =>
+    alpha = M/N
+    beta = 0.0
+    beta := nz(beta[1])-nz(X[N])+ X
+    gamma = 0.0
+    gamma := na(X[N]) ? na :beta/N
+    lamda = 0.0
+    lamda := na(lamda[1]) ? beta : alpha*X + (1-alpha)*nz(lamda[1])
+    lamda
+ 
+ 
+///////////////////////////////
+//MCDX Source and Length
+///////////////////////////////
+
+mcdx_src = mcdx_source
+
+auto_len = 3
+for i = 3 to 100
+    if bar_index == i
+        auto_len := i
+        break
+    if bar_index>=100
+        auto_len :=100
+        break
+
+int mcdx_len = 3
+mcdx_len := mcdx_length =='Auto' ? auto_len : mcdx_length == '50-day' ? 50 : mcdx_length == '100-day' ? 100 : mcdx_length == 'Manual Input' ? manual_len : na
+
+mcdx_len_string = 'MCDX ' + 
+ '\n'+ str.tostring(mcdx_len,"#") +' days'
+
+// keep for future use if needed
+// mcdx_label = label.new(bar_index+10,50,
+//  text=mcdx_len_string, color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+// label.delete(mcdx_label[1])
+
+
+///////////////////////////////
+//Generic Computation
+///////////////////////////////
+
+X = mcdx_src
+N = mcdx_len
+H = high 
+L = low
+C = close
+O = open
+
+mcdx_hoh = fmcdx_hoh(H,N)
+mcdx_lol = fmcdx_lol(L,N)
+mcdx_range = fmcdx_range(H,L,N)
+mcdx_avg = fmcdx_avg(H,L,N)
+
+
+///////////////////////////////
+//Locked Chips
+///////////////////////////////
+
+lc = int(na)
+for i = 3 to 100
+    if bar_index == i-1 and mcdx_length =='Auto'
+        lc:= 100
+        break
+    if bar_index>=100 and mcdx_length == 'Auto'
+        lc:=100
+        break  
+    if bar_index>=50-1 and mcdx_length == '50-day'
+        lc:=100
+        break  
+    if bar_index>=100-1 and mcdx_length == '100-day'
+        lc:=100
+        break  
+    if bar_index>=manual_len-1 and mcdx_length == 'Manual Input'
+        lc:=100
+        break  
+    
+locked_chips = lc
+plot(all_show or lc_show?locked_chips:na, title='Locked Chips', color=color.new(#39FF14, 0), linewidth=10, style=plot.style_columns)
+
+
+///////////////////////////////
+//Float Chips
+///////////////////////////////
+
+sma20 = ta.sma(mcdx_src,20)
+mcdx_avg50 = fmcdx_avg(H,L,50)
+
+fc = fmcdx_fc(X,N)
+
+fc_1 = mcdx_len >= 100 ? C>O and L>sma20 and L>mcdx_avg and L>mcdx_avg50 : C>O and L>sma20 and L> mcdx_avg
+fc_2 = mcdx_len >= 100 ? C>O and C>sma20 and C>mcdx_avg and C>mcdx_avg50 : C>O and C>sma20 and C> mcdx_avg
+fc_3 = mcdx_len >= 100 ? C>sma20 and O>mcdx_avg and O>mcdx_avg50 and C>mcdx_avg50 and C>mcdx_avg : C>sma20 and O>mcdx_avg and C> mcdx_avg
+fc_4 = mcdx_len >= 100 ? C>=O and H>mcdx_avg and C>mcdx_avg50 : C>=O and H>mcdx_avg and C> mcdx_avg
+fc_all = fc_1 or fc_2 or fc_3 or fc_4 ? 100 : fc
+
+float_chips = fc_all > 100 ? 100 : fc_all<0 ? 0 : fc_all
+fc_color = (all_show or fc_show) and fc_all ? color.new(#FFFF00, 0) : lc_show and fc_all? color.white : na
+
+plot(all_show or fc_show or lc_show?float_chips:na, title='Float Chips', color=fc_color, linewidth=10, style=plot.style_columns)
+
+plot(lc_show?float_chips:na, title='Locked Chips Only', color=color.new(color.white, 0), linewidth=10, style=plot.style_columns)
+plot(all_show or fc_show?float_chips:na, title='Float Chips', color=color.new(#FFFF00, 0), linewidth=10, style=plot.style_columns)
+
+///////////////////////////////
+//Profitable Chips
+///////////////////////////////
+pc_1 = fmcdx_pc(X,N)
+pc_2 = (X - mcdx_avg) / mcdx_range * 100
+pc_3 = (pc_1 + pc_2) / 2 + 25
+profit_chips = pc_3<0?0 : pc_3>100?100 : pc_3
+sma_pc = ta.sma(profit_chips, sma_pc_len) 
+pc_color = profit_chips >= sma_pc ? color.new(#EB4C42, 10) : color.new(#FFB7C5, 0)
+plot(all_show or pc_show?profit_chips:na, title='Profitable Chips', color=pc_color, linewidth=10, style=plot.style_columns)
+
+
+
+///////////////////////////////
+//Moving Average 
+///////////////////////////////
+
+//moving average of profitable chips
+pc_val = profit_chips
+sma_pc_val = sma_pc
+plot(sma_pc_show? sma_pc_val:na, title='SMA of PC', color=color.new(color.maroon, 0), linewidth=1)
+
+//moving average of floating chips
+fc_val = float_chips - profit_chips
+sma_fc_val = ta.sma(fc_val, sma_fc_len)
+plot(sma_fc_show?sma_fc_val:na, title='SMA of FC', color=color.new(#FFAE42, 0), linewidth=1)
+
+// moving average of locked chips
+lc_val =  math.abs(100 - float_chips)
+sma_lc_val = ta.sma(lc_val, sma_lc_len) 
+plot(sma_lc_show?sma_lc_val:na, title='SMA of LC', color=color.new(#50C878, 0), linewidth=1)
+
+
+pc_co_smapc = ta.crossover(profit_chips,sma_pc) and sma_lc_val>sma_pc_val? profit_chips :na
+// plotshape(pc_co_smapc, style=shape.circle,size=size.tiny, location = location.absolute)
+
+//////////////////////////////////////
+//PC crossover SMA-PC Alert Condtions 
+//////////////////////////////////////
+
+alertcondition(pc_co_smapc, title='MCDX : PC crossover SMA PC', message='MCDX : PC crossover SMA PC')
+
+///////////////////////////////
+//Golden Cross, Death Cross of SMA PC & SMA LC
+///////////////////////////////
+
+ma_pclc_gold = ta.crossover(sma_pc_val,sma_lc_val)
+golden_cross = ma_pclc_gold? sma_pc_val : na
+ma_pclc_death = ta.crossunder(sma_pc_val,sma_lc_val)
+death_cross = ma_pclc_death ? sma_pc_val : na
+// plotshape(gc_show?golden_cross:na, title='Golden Cross SMA PC & SMA LC', location=location.absolute, style=shape.cross, text='gC', color=color.new(color.purple, 0),size=size.tiny)
+// plotshape(dc_show?death_cross:na, title='Death Cross SMA PC & SMA LC', location=location.absolute, style=shape.xcross, text='dC', color=color.new(color.black, 0),size=size.tiny)
+
+//Golden Cross Label & Icon
+gcs = gc_label_size
+gc1 = size.auto
+if gcs == 'TINY'
+    gc1 := size.tiny
+if gcs == 'SMALL'
+    gc1 := size.small
+if gcs == 'NORMAL'
+    gc1 := size.normal
+if gcs == 'LARGE'
+    gc1 := size.large
+if gcs == 'HUGE'
+    gc1 := size.huge
+
+gc_label = gc_show and ma_pclc_gold ? label.new(bar_index, sma_pc_val,
+ text='GC', color=color.black, style=label.style_none, textalign = text.align_center, size=gc1) :na
+label.set_x(gc_label, bar_index)
+label.set_y(gc_label, sma_pc_val+gc_label_offset_v)
+label.set_tooltip(gc_label, "Golden Cross")
+
+plotshape(gc_icon_show?golden_cross:na,title='GC Icon', style=shape.cross, location=location.absolute, color=color.black,
+ text='', size=size.tiny )
+
+//Death Cross Label & Label
+dcs = dc_label_size
+dc1 = size.auto
+if dcs == 'TINY'
+    dc1 := size.tiny
+if dcs == 'SMALL'
+    dc1 := size.small
+if dcs == 'NORMAL'
+    dc1 := size.normal
+if dcs == 'LARGE'
+    dc1 := size.large
+if dcs == 'HUGE'
+    dc1 := size.huge
+
+dc_label = dc_show and ma_pclc_death ? label.new(bar_index, sma_pc_val,
+ text='DC', color=color.black, style=label.style_none, textalign = text.align_center, size=dc1) :na
+label.set_x(dc_label, bar_index)
+label.set_y(dc_label, sma_pc_val+dc_label_offset_v)
+label.set_tooltip(dc_label, "Death Cross")
+
+plotshape(dc_icon_show?death_cross:na,title='DC Icon', style=shape.xcross, location=location.absolute, color=color.black,
+ text='', size=size.tiny )
+
+
+//////////////////////////////////////
+//Golden Cross, Death Cross Alerts 
+//////////////////////////////////////
+//notes : alertcondition allows users to set alert at the alert icon
+
+alertcondition(ma_pclc_gold, title='MCDX : Golden Cross', message='MCDX : Golden Cross')
+alertcondition(ma_pclc_death, title='MCDX : Death Cross', message='MCDX : Death Cross')
+
+///////////////////////////////
+//BC, OB, OS Generic Criteria
+///////////////////////////////
+
+vol = volume
+p_vol = nz(volume[1])
+
+vpc = vol*ta.change(close, 1)
+vpcema1 = ta.ema(vpc, 13)
+vpcema2 = ta.ema(vpcema1, 5)
+bcs = ta.stoch(close, high, low, 14)
+bck = ta.sma(bcs, 3)
+bcd = ta.sma(bck, 3)
+ph = nz(high[1])
+pl = nz(low[1])
+hoph = ta.highest(ph, 2)
+hopl = ta.lowest(pl, 2)
+
+sma_vol5 = ta.sma(vol, 5)
+sma_vol50 = ta.sma(vol, 50)
+trig = vol > sma_vol50 and vol < 1.5 * p_vol and close > 1.03 * open and close > nz(close[1])
+onh = vol > 1.5 * p_vol and close > open and close > nz(close[1])
+hiu = vol > 1.5 * p_vol and vol > sma_vol50 and vol < 2.5 * sma_vol50 and close >= open and close > nz(close[1])
+huu = vol > 1.5 * p_vol and vol > 2.5 * sma_vol50 and close >= open and close > nz(close[1])
+vol_all = trig or onh or hiu or huu
+
+///////////////////////////////
+//potential bottom catch
+///////////////////////////////
+
+//BC1
+k_bc1a = bck >= 10 and bck < 20
+k_bc1b = bck >= 50 and bck < 60
+k_bc1_all = k_bc1a or k_bc1b
+
+bc1 = k_bc1_all and open <= sma20 and close >= sma20 and close > open and close > nz(close[1]) and vol_all
+
+//BC2
+BC2(X,N) =>
+    bc2 = float(na)
+    HOH = ta.highest(X,N)
+    LOL = ta.lowest(X,N)
+    bc2 := 100 * (HOH - X) / (HOH - LOL)
+    
+bc21 = BC2(close,21)
+bc42 = BC2(close,42)
+bc21_cu_80 = ta.crossunder(bc21, 80)
+bc42_cu_80 = ta.crossunder(bc42, 80)
+bc2_raw = bc21_cu_80 and bc42_cu_80
+
+c_pc_value = pc_val
+p1_pc_value = nz(pc_val[1])
+p2_pc_value = nz(pc_val[2])
+
+pc_value_lol = p2_pc_value > p1_pc_value and p1_pc_value < c_pc_value and pc_val > sma_pc_val
+
+c_lc_value = lc_val
+p1_lc_value = nz(lc_val[1])
+p2_lc_value = nz(lc_val[2])
+
+lc_value_hoh = p2_lc_value < p1_lc_value and p1_lc_value > c_lc_value and c_lc_value > 0
+
+bc2 = pc_value_lol and lc_value_hoh and bc2_raw and close > open
+
+bc_all =  bc1 or bc2
+
+//BC Label
+bcls = bc_label_size
+bcts = size.auto
+if bcls == 'TINY'
+    bcts := size.tiny
+if bcls == 'SMALL'
+    bcts := size.small
+if  bcls == 'NORMAL'
+    bcts := size.normal
+if  bcls == 'LARGE'
+    bcts := size.large
+if  bcls == 'HUGE'
+    bcts := size.huge
+
+bc_label = bc_show and bc_all ? label.new(bar_index, bc_label_offset_v,
+ text='BC', color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=bcts) :na
+label.set_x(bc_label, bar_index)
+label.set_y(bc_label, bc_label_offset_v)
+label.set_tooltip(bc_label, "Bottom Catch")
+
+bc_icon_is = bc_label_size =='TINY' or bc_label_size =='SMALL' or bc_label_size =='NORMAL' or bc_label_size =='LARGE' or bc_label_size =='HUGE'
+bc_icon_val = bc_all and bc_icon_is ? bc_label_offset_v-5:bc_label_size =='NONE' ? na :na
+plotshape(bc_icon_show?bc_icon_val:na,title='BC Icon', style=shape.triangleup, location=location.absolute, color=color.black,
+ text='', size=size.tiny )
+
+///////////////////////////////
+//Oversold 
+///////////////////////////////
+
+os = not bc_all and close > hoph and bcd <= 35 and vpcema1 > 0 and vpcema1 > vpcema2
+
+//OS Label
+osls = os_label_size
+osts = size.auto
+if osls == 'TINY'
+    osts := size.tiny
+if osls == 'SMALL'
+    osts:= size.small
+if osls == 'NORMAL'
+    osts := size.normal
+if osls == 'LARGE'
+    osts := size.large
+if osls == 'HUGE'
+    osts:= size.huge
+
+os_label = os_show and os ? label.new(bar_index, os_label_offset_v,
+ text='OS', color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=osts) :na
+label.set_x(os_label, bar_index)
+label.set_y(os_label, os_label_offset_v)
+label.set_tooltip(os_label, "Oversold")
+
+os_icon_is = os_label_size =='TINY' or os_label_size =='SMALL' or os_label_size =='NORMAL' or os_label_size =='LARGE' or os_label_size =='HUGE'
+os_icon_val = os and os_icon_is ? os_label_offset_v-5:os_label_size =='NONE' ? na :na
+plotshape(os_icon_show?os_icon_val:na,title='OS Icon', style=shape.triangleup, location=location.absolute, color=color.black,
+ text='', size=size.tiny )
+
+///////////////////////////////
+//Overbought
+///////////////////////////////
+
+ob1 = close < ta.sma(close, 5) and close < open and low < low[1] and ta.crossunder(bcd, 80)
+ob2 = close < ta.sma(close, 5) and close < hopl and ta.crossunder(bcd, 65)
+ob3 = close < ta.sma(close, 5) and close < open and ta.crossunder(bck, bcd) and bcd > 65 and bck > 65
+ob = ob1 or ob2 or ob3 
+
+
+//OB Label
+obls = ob_label_size
+obts = size.auto
+if obls == 'TINY'
+    obts := size.tiny
+if obls == 'SMALL'
+    obts:= size.small
+if obls == 'NORMAL'
+    obts := size.normal
+if obls == 'LARGE'
+    obts := size.large
+if osls == 'HUGE'
+    obts := size.huge
+
+ob_label = ob_show and ob ? label.new(bar_index, ob_label_offset_v,
+ text='OB', color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=obts) :na
+label.set_x(ob_label, bar_index)
+label.set_y(ob_label, ob_label_offset_v)
+label.set_tooltip(ob_label, "Overbought")
+
+ob_icon_is = ob_label_size =='TINY' or ob_label_size =='SMALL' or ob_label_size =='NORMAL' or ob_label_size =='LARGE' or ob_label_size =='HUGE'
+ob_icon_val = ob and ob_icon_is ? ob_label_offset_v-5:ob_label_size =='NONE' ? na :na
+plotshape(ob_icon_show?ob_icon_val:na,title='OB Icon', style=shape.triangledown, location=location.absolute, color=color.black,
+ text='', size=size.tiny )
+
+
+//////////////////////////////////////
+//Bottom Catch, OS, OB Alerts
+//////////////////////////////////////
+//notes : alertcondition allows users to set alert at the alert icon
+
+alertcondition(bc_all, title='MCDX : Bottom Catch Alerts', message='MCDX : Bottom Catch (BC)')
+alertcondition(os, title='MCDX : OS', message='MCDX : OS')
+alertcondition(ob, title='MCDX : OB', message='MCDX : OB')
+
+
+///////////////////////////////
+//Fund Simulation
+///////////////////////////////
+sim1 = 3*fY(fr(X,30),5,1)-2*fY(fY(fr(X,30),5,1),3,1)  
+fundsim = sim1 <0 ? 0 : sim1>100 ? 100 : sim1
+plot(fundsim_show?fundsim:na,title="Fund Simulation",color=fundsim_color)
+
+
+///////////////////////////////
+//Bar Index
+///////////////////////////////
+
+bn = bar_index + 1
+bn_string = 'bar number = ' + str.tostring(bn,"#")
+bi_label = label.new(bar_index, 0,
+ text=bn_string, textcolor=color.new(color.white,100), color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+label.set_tooltip(bi_label,bn_string)
+label.delete(bi_label[1])
+
+bi_label1 = label.new(bar_index, 20,
+ text=bn_string, textcolor=color.new(color.white,100), color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+label.set_tooltip(bi_label1, bn_string)
+label.delete(bi_label1[1])
+
+bi_label2 = label.new(bar_index, 40,
+ text=bn_string, textcolor=color.new(color.white,100), color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+label.set_tooltip(bi_label2, bn_string)
+label.delete(bi_label2[1])
+
+bi_label3 = label.new(bar_index, 60,
+ text=bn_string, textcolor=color.new(color.white,100), color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+label.set_tooltip(bi_label3,bn_string)
+label.delete(bi_label3[1])
+
+bi_label4 = label.new(bar_index, 80 ,
+ text=bn_string, textcolor=color.new(color.white,100), color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+label.set_tooltip(bi_label4,bn_string)
+label.delete(bi_label4[1])
+
+bi_label5 = label.new(bar_index,100 ,
+ text=bn_string, textcolor=color.new(color.white,100), color=color.new(color.white,100), style=label.style_none, textalign = text.align_center, size=size.normal)
+label.set_tooltip(bi_label5, bn_string)
+label.delete(bi_label5[1])
+
+///////////////////////////////
+//Table
+///////////////////////////////
+var table QTable = table.new(position.middle_right, 9, 9, border_width=1)
+
+text_1 = size.auto
+if text_size == 'TINY'
+    text_1 := size.tiny
+    text_1
+if text_size == 'SMALL'
+    text_1 := size.small
+    text_1
+if text_size == 'NORMAL'
+    text_1 := size.normal
+    text_1
+if text_size == 'LARGE'
+    text_1 := size.large
+    text_1
+if text_size == 'HUGE'
+    text_1 := size.huge
+    text_1
+
+
+f_fillCell10(_table, _column, _row, _label) =>
+    _cellText10 = ind  ? _label : na
+    _cellColor10 = ind ? color.new(color.yellow, 50) : na
+    table.cell(_table, _column, _row, _cellText10, bgcolor=_cellColor10, text_color=color.black, width=w)
+    table.cell_set_text_size(QTable, 1, 0, text_1)
+    table.cell_set_tooltip(QTable, 1, 0, tooltip = mcdx_len_string) 
+
+if barstate.islast
+    f_fillCell10(QTable, 1, 0, "MCDX Plus")
+
+f_fillCell11(_table, _column, _row, _value) =>
+    _cellText11 = ind ? str.tostring(_value, '#.#') : na
+    _cellColor11 = ind ? pc_color : na
+    table.cell(_table, _column, _row, _cellText11, bgcolor=_cellColor11, text_color=color.black, width=w)
+    table.cell_set_text_size(QTable, 1, 1, text_1)
+    table.cell_set_tooltip(QTable, 1, 1, tooltip = 'Profitable Chips Value') 
+
+if barstate.islast
+    f_fillCell11(QTable, 1, 1, pc_val)
+
+f_fillCell12(_table, _column, _row, _value) =>
+    _cellText12 = ind ? str.tostring(_value, '#.#') : na
+    _cellColor12 = ind ? color.new(color.yellow, 0) : na
+    table.cell(_table, _column, _row, _cellText12, bgcolor=_cellColor12, text_color=color.black, width=w)
+    table.cell_set_text_size(QTable, 1, 2, text_1)
+    table.cell_set_tooltip(QTable, 1, 2, tooltip = 'Float Chips Value') 
+
+if barstate.islast
+    f_fillCell12(QTable, 1, 2, fc_val)
+
+f_fillCell13(_table, _column, _row, _value) =>
+    _cellText13 = ind ? str.tostring(_value, '#.#') : na
+    _cellColor13 = ind ? color.new(#39FF14, 0) : na
+    table.cell(_table, _column, _row, _cellText13, bgcolor=_cellColor13, text_color=color.black, width=w)
+    table.cell_set_text_size(QTable, 1, 3, text_1)
+    table.cell_set_tooltip(QTable, 1, 3, tooltip = 'Locked Chips Value') 
+    
+
+if barstate.islast
+    f_fillCell13(QTable, 1, 3, lc_val)
+

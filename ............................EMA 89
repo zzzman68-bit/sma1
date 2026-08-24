@@ -1,0 +1,35 @@
+//@version=5
+indicator("EMA 89 và EMA 34", shorttitle="EMA 89 BMAX", overlay=true)
+
+// EMA 89
+ema89_length = 89
+ema89 = ta.ema(close, ema89_length)
+
+// EMA 34
+ema34_length = 34
+ema34 = ta.ema(close, ema34_length)
+
+// Hiển thị đường EMA
+plot(ema89, color=color.rgb(243, 169, 9), title="EMA 89")
+plot(ema34, color=color.rgb(49, 78, 240), title="EMA 34")
+
+// Điều kiện cảnh báo
+crossoverUp = ta.crossover(high, ema89) and ema89>ema34
+crossoverDown = ta.crossunder(low, ema89) and ema89<ema34
+
+// Kích hoạt cảnh báo
+if crossoverUp
+    alert("Giá cắt lên EMA89", alert.freq_once_per_bar_close)
+if crossoverDown
+    alert("Giá cắt xuống EMA89", alert.freq_once_per_bar_close)
+
+// Tạo cảnh báo cho nhiều cặp giao dịch
+TriggerOB(_ticker) =>
+    Finder1 = request.security(_ticker, timeframe.period, crossoverUp)
+    Finder2 = request.security(_ticker, timeframe.period, crossoverDown)
+    if Finder1
+        alert(_ticker+" Giá cắt lên EMA89", alert.freq_once_per_bar_close)
+    if Finder2
+        alert(_ticker+"Giá cắt xuống EMA89", alert.freq_once_per_bar_close)
+TriggerOB('OANDA:XAUUSD')
+TriggerOB('OANDA:GBPUSD')

@@ -1,0 +1,17 @@
+//@version=4
+study(title="APEX - Parabolic SAR", shorttitle="APEX - Parabolic SAR by QuantTherapy", overlay=true)
+start       = 0.0 // APEX has start 0
+increment   = input(0.02, minval=0, title="Acceleration Factor")
+maximum     = input(0.2,  title="AF Maximum")
+start      := increment
+_sar        = sar(start, increment, maximum)
+_sar_apex = _sar[1] 
+
+colorSAR = _sar_apex > close ? color.red : color.lime
+plot(_sar_apex, style=plot.style_line, color=colorSAR, linewidth = 2)
+
+alertcondition(crossunder(_sar_apex,close), "Long", "Long")
+alertcondition(crossover(_sar_apex,close), "Short", "Short")
+
+plotshape(crossunder(_sar_apex,close) , location=location.belowbar, style=shape.labelup  , color=color.lime, size=size.tiny)
+plotshape(crossover (_sar_apex,close) , location=location.abovebar, style=shape.labeldown, color=color.red , size=size.tiny)

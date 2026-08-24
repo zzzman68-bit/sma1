@@ -1,0 +1,36 @@
+//@version=3
+study("Philosof fib ema",overlay=true)
+
+row1 = input(false, title="EMA 1")
+row2 = input(true, title="EMA 2")
+row3 = input(true, title="EMA 3")
+row4 = input(false, title="EMA 4")
+row5 = input(true, title="EMA 5")
+row6 = input(false, title="EMA 6")
+row7 = input(true, title="EMA 7")
+
+M3=ema(close, 3)
+M8=ema(close, 8)
+M21=ema(close, 21)
+M34=ema(close, 34)
+M55=ema(close, 55)
+M89=ema(close, 89)
+MA200=ema(close, 200)
+
+Mw1= wma(close, 5)
+Mw2= wma(Mw1, 8)
+Mw3= wma(Mw2, 13)
+Mw4= wma(Mw3, 21)
+Mw5= wma(Mw4, 34)
+MAVW= wma(Mw5, 55)
+
+plot(MAVW, color=navy, linewidth=3,title="MAVW")
+plot(row1 ? M3 : na, color=black, linewidth=2,title="EMA3")
+plot(row2 ? M8 : na, color=teal, linewidth=2,title="EMA8")
+plot(row3 ? M21 : na,color=green,linewidth=3,title="EMA21")
+plot(row4 ? M34 : na,color=black,linewidth=3,title="EMA34")
+plot(row5 ? M55 : na, color=black, linewidth=4,title="EMA55")
+plot(row6 ? M89 : na, color=black, linewidth=4,title="MA89")
+plot(row7 ? MA200 : na, color=black, linewidth=4,title="MA200")
+
+//Twitter @WiseAnalyze

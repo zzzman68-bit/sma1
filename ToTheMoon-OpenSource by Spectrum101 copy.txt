@@ -1,0 +1,281 @@
+//@version=3
+study("ToTheMoonAndBack-OpenSource",overlay=false)
+
+mul2 = floor(pow(2,input(3)))
+
+s=0.0
+
+get(x2)=>
+    
+    x = floor(x2*mul2)+1
+
+    per = 100.0*((close)/(close[1])-1.0) 
+
+    tu=sma(sum(per,floor(x)),floor(x/2))
+
+    c = abs(tu)>abs(tu[1])?(tu>0?green:red):(tu>tu[1]?blue:orange)
+    [x2+atan(tu)*2/3.141,c]
+
+
+gets(name)=>
+    security(name,period,close)
+
+BTCUSD =    gets('BITTREX:BTCUSDT')
+ATOMBTC =   gets('BITTREX:ATOMBTC')
+XLMBTC =    gets('BITTREX:XLMBTC')
+XRPBTC =    gets('BITTREX:XRPBTC')
+ETHBTC =    gets('BITTREX:ETHBTC')
+LTCBTC =    gets('BITTREX:LTCBTC')
+
+[tu1,c1]=get(1)
+[tu2,c2]=get(2)
+[tu3,c3]=get(3)
+[tu4,c4]=get(4)
+[tu5,c5]=get(5)
+[tu6,c6]=get(6)
+[tu7,c7]=get(7)
+[tu8,c8]=get(8)
+[tu9,c9]=get(9)
+[tu10,c10]=get(10)
+[tu11,c11]=get(11)
+[tu12,c12]=get(12)
+[tu13,c13]=get(13)
+[tu14,c14]=get(14)
+[tu15,c15]=get(15)
+[tu16,c16]=get(16)
+[tu17,c17]=get(17)
+[tu18,c18]=get(18)
+[tu19,c19]=get(19)
+[tu20,c20]=get(20)
+[tu21,c21]=get(21)
+[tu22,c22]=get(22)
+[tu23,c23]=get(23)
+[tu24,c24]=get(24)
+[tu25,c25]=get(25)
+[tu26,c26]=get(26)
+[tu27,c27]=get(27)
+[tu28,c28]=get(28)
+[tu29,c29]=get(29)
+[tu30,c30]=get(30)
+
+s:=s+tu1-1
+s:=s+tu2-2
+s:=s+tu3-3
+s:=s+tu4-4
+s:=s+tu5-5
+s:=s+tu6-6
+s:=s+tu7-7
+s:=s+tu8-8
+s:=s+tu9-9
+s:=s+tu10-10
+s:=s+tu11-11
+s:=s+tu12-12
+s:=s+tu13-13
+s:=s+tu14-14
+s:=s+tu15-15
+s:=s+tu16-16
+s:=s+tu17-17
+s:=s+tu18-18
+s:=s+tu19-19
+s:=s+tu20-20
+s:=s+tu21-21
+s:=s+tu22-22
+s:=s+tu23-23
+s:=s+tu24-24
+s:=s+tu25-25
+s:=s+tu26-26
+s:=s+tu27-27
+s:=s+tu28-28
+s:=s+tu29-29
+s:=s+tu30-30
+
+s:=s/2+15
+
+cv1 =(30-tu1)<s?((c1==blue or c1==green)?c1:na):((c29==red or c29==orange)?c29:na)
+cv2 =(30-tu2)<s?((c2==blue or c2==green)?c2:na):((c28==red or c28==orange)?c28:na)
+cv3 =(30-tu3)<s?((c3==blue or c3==green)?c3:na):((c27==red or c27==orange)?c27:na)
+cv4 =(30-tu4)<s?((c4==blue or c4==green)?c4:na):((c26==red or c26==orange)?c26:na)
+cv5 =(30-tu5)<s?((c5==blue or c5==green)?c5:na):((c25==red or c25==orange)?c25:na)
+cv6 =(30-tu6)<s?((c6==blue or c6==green)?c6:na):((c24==red or c24==orange)?c24:na)
+cv7 =(30-tu7)<s?((c7==blue or c7==green)?c7:na):((c23==red or c23==orange)?c23:na)
+cv8 =(30-tu8)<s?((c8==blue or c8==green)?c8:na):((c22==red or c22==orange)?c22:na)
+cv9 =(30-tu9)<s?((c9==blue or c9==green)?c9:na):((c21==red or c21==orange)?c21:na)
+cv10 =(30-tu10)<s?((c10==blue or c10==green)?c10:na):((c20==red or c20==orange)?c20:na)
+cv11 =(30-tu11)<s?((c11==blue or c11==green)?c11:na):((c19==red or c19==orange)?c19:na)
+cv12 =(30-tu12)<s?((c12==blue or c12==green)?c12:na):((c18==red or c18==orange)?c18:na)
+cv13 =(30-tu13)<s?((c13==blue or c13==green)?c13:na):((c17==red or c17==orange)?c17:na)
+cv14 =(30-tu14)<s?((c14==blue or c14==green)?c14:na):((c16==red or c16==orange)?c16:na)
+cv15 =(30-tu15)<s?((c15==blue or c15==green)?c15:na):((c15==red or c15==orange)?c15:na)
+cv16 =(30-tu16)<s?((c16==blue or c16==green)?c16:na):((c14==red or c14==orange)?c14:na)
+cv17 =(30-tu17)<s?((c17==blue or c17==green)?c17:na):((c13==red or c13==orange)?c13:na)
+cv18 =(30-tu18)<s?((c18==blue or c18==green)?c18:na):((c12==red or c12==orange)?c12:na)
+cv19 =(30-tu19)<s?((c19==blue or c19==green)?c19:na):((c11==red or c11==orange)?c11:na)
+cv20 =(30-tu20)<s?((c20==blue or c20==green)?c20:na):((c10==red or c10==orange)?c10:na)
+cv21 =(30-tu21)<s?((c21==blue or c21==green)?c21:na):((c9==red or c9==orange)?c9:na)
+cv22 =(30-tu22)<s?((c22==blue or c22==green)?c22:na):((c8==red or c8==orange)?c8:na)
+cv23 =(30-tu23)<s?((c23==blue or c23==green)?c23:na):((c7==red or c7==orange)?c7:na)
+cv24 =(30-tu24)<s?((c24==blue or c24==green)?c24:na):((c6==red or c6==orange)?c6:na)
+cv25 =(30-tu25)<s?((c25==blue or c25==green)?c25:na):((c5==red or c5==orange)?c5:na)
+cv26 =(30-tu26)<s?((c26==blue or c26==green)?c26:na):((c4==red or c4==orange)?c4:na)
+cv27 =(30-tu27)<s?((c27==blue or c27==green)?c27:na):((c3==red or c3==orange)?c3:na)
+cv28 =(30-tu28)<s?((c28==blue or c28==green)?c28:na):((c2==red or c2==orange)?c2:na)
+cv29 =(30-tu29)<s?((c29==blue or c29==green)?c29:na):((c1==red or c1==orange)?c1:na)
+
+
+cr=0.0
+cg=0.0
+co=0.0
+cb=0.0
+
+cr:=cr+(cv1==red?abs(tu1-1):0)
+cg:=cg+(cv1==green?abs(tu1-1):0)
+co:=co+(cv1==orange?abs(tu1-1):0)
+cb:=cb+(cv1==blue?abs(tu1-1):0)
+cr:=cr+(cv2==red?abs(tu2-2):0)
+cg:=cg+(cv2==green?abs(tu2-2):0)
+co:=co+(cv2==orange?abs(tu2-2):0)
+cb:=cb+(cv2==blue?abs(tu2-2):0)
+cr:=cr+(cv3==red?abs(tu3-3):0)
+cg:=cg+(cv3==green?abs(tu3-3):0)
+co:=co+(cv3==orange?abs(tu3-3):0)
+cb:=cb+(cv3==blue?abs(tu3-3):0)
+cr:=cr+(cv4==red?abs(tu4-4):0)
+cg:=cg+(cv4==green?abs(tu4-4):0)
+co:=co+(cv4==orange?abs(tu4-4):0)
+cb:=cb+(cv4==blue?abs(tu4-4):0)
+cr:=cr+(cv5==red?abs(tu5-5):0)
+cg:=cg+(cv5==green?abs(tu5-5):0)
+co:=co+(cv5==orange?abs(tu5-5):0)
+cb:=cb+(cv5==blue?abs(tu5-5):0)
+cr:=cr+(cv6==red?abs(tu6-6):0)
+cg:=cg+(cv6==green?abs(tu6-6):0)
+co:=co+(cv6==orange?abs(tu6-6):0)
+cb:=cb+(cv6==blue?abs(tu6-6):0)
+cr:=cr+(cv7==red?abs(tu7-7):0)
+cg:=cg+(cv7==green?abs(tu7-7):0)
+co:=co+(cv7==orange?abs(tu7-7):0)
+cb:=cb+(cv7==blue?abs(tu7-7):0)
+cr:=cr+(cv8==red?abs(tu8-8):0)
+cg:=cg+(cv8==green?abs(tu8-8):0)
+co:=co+(cv8==orange?abs(tu8-8):0)
+cb:=cb+(cv8==blue?abs(tu8-8):0)
+cr:=cr+(cv9==red?abs(tu9-9):0)
+cg:=cg+(cv9==green?abs(tu9-9):0)
+co:=co+(cv9==orange?abs(tu9-9):0)
+cb:=cb+(cv9==blue?abs(tu9-9):0)
+cr:=cr+(cv10==red?abs(tu10-10):0)
+cg:=cg+(cv10==green?abs(tu10-10):0)
+co:=co+(cv10==orange?abs(tu10-10):0)
+cb:=cb+(cv10==blue?abs(tu10-10):0)
+cr:=cr+(cv11==red?abs(tu11-11):0)
+cg:=cg+(cv11==green?abs(tu11-11):0)
+co:=co+(cv11==orange?abs(tu11-11):0)
+cb:=cb+(cv11==blue?abs(tu11-11):0)
+cr:=cr+(cv12==red?abs(tu12-12):0)
+cg:=cg+(cv12==green?abs(tu12-12):0)
+co:=co+(cv12==orange?abs(tu12-12):0)
+cb:=cb+(cv12==blue?abs(tu12-12):0)
+cr:=cr+(cv13==red?abs(tu13-13):0)
+cg:=cg+(cv13==green?abs(tu13-13):0)
+co:=co+(cv13==orange?abs(tu13-13):0)
+cb:=cb+(cv13==blue?abs(tu13-13):0)
+cr:=cr+(cv14==red?abs(tu14-14):0)
+cg:=cg+(cv14==green?abs(tu14-14):0)
+co:=co+(cv14==orange?abs(tu14-14):0)
+cb:=cb+(cv14==blue?abs(tu14-14):0)
+cr:=cr+(cv15==red?abs(tu15-15):0)
+cg:=cg+(cv15==green?abs(tu15-15):0)
+co:=co+(cv15==orange?abs(tu15-15):0)
+cb:=cb+(cv15==blue?abs(tu15-15):0)
+cr:=cr+(cv16==red?abs(tu16-16):0)
+cg:=cg+(cv16==green?abs(tu16-16):0)
+co:=co+(cv16==orange?abs(tu16-16):0)
+cb:=cb+(cv16==blue?abs(tu16-16):0)
+cr:=cr+(cv17==red?abs(tu17-17):0)
+cg:=cg+(cv17==green?abs(tu17-17):0)
+co:=co+(cv17==orange?abs(tu17-17):0)
+cb:=cb+(cv17==blue?abs(tu17-17):0)
+cr:=cr+(cv18==red?abs(tu18-18):0)
+cg:=cg+(cv18==green?abs(tu18-18):0)
+co:=co+(cv18==orange?abs(tu18-18):0)
+cb:=cb+(cv18==blue?abs(tu18-18):0)
+cr:=cr+(cv19==red?abs(tu19-19):0)
+cg:=cg+(cv19==green?abs(tu19-19):0)
+co:=co+(cv19==orange?abs(tu19-19):0)
+cb:=cb+(cv19==blue?abs(tu19-19):0)
+cr:=cr+(cv20==red?abs(tu20-20):0)
+cg:=cg+(cv20==green?abs(tu20-20):0)
+co:=co+(cv20==orange?abs(tu20-20):0)
+cb:=cb+(cv20==blue?abs(tu20-20):0)
+cr:=cr+(cv21==red?abs(tu21-21):0)
+cg:=cg+(cv21==green?abs(tu21-21):0)
+co:=co+(cv21==orange?abs(tu21-21):0)
+cb:=cb+(cv21==blue?abs(tu21-21):0)
+cr:=cr+(cv22==red?abs(tu22-22):0)
+cg:=cg+(cv22==green?abs(tu22-22):0)
+co:=co+(cv22==orange?abs(tu22-22):0)
+cb:=cb+(cv22==blue?abs(tu22-22):0)
+cr:=cr+(cv23==red?abs(tu23-23):0)
+cg:=cg+(cv23==green?abs(tu23-23):0)
+co:=co+(cv23==orange?abs(tu23-23):0)
+cb:=cb+(cv23==blue?abs(tu23-23):0)
+cr:=cr+(cv24==red?abs(tu24-24):0)
+cg:=cg+(cv24==green?abs(tu24-24):0)
+co:=co+(cv24==orange?abs(tu24-24):0)
+cb:=cb+(cv24==blue?abs(tu24-24):0)
+cr:=cr+(cv25==red?abs(tu25-25):0)
+cg:=cg+(cv25==green?abs(tu25-25):0)
+co:=co+(cv25==orange?abs(tu25-25):0)
+cb:=cb+(cv25==blue?abs(tu25-25):0)
+cr:=cr+(cv26==red?abs(tu26-26):0)
+cg:=cg+(cv26==green?abs(tu26-26):0)
+co:=co+(cv26==orange?abs(tu26-26):0)
+cb:=cb+(cv26==blue?abs(tu26-26):0)
+cr:=cr+(cv27==red?abs(tu27-27):0)
+cg:=cg+(cv27==green?abs(tu27-27):0)
+co:=co+(cv27==orange?abs(tu27-27):0)
+cb:=cb+(cv27==blue?abs(tu27-27):0)
+cr:=cr+(cv28==red?abs(tu28-28):0)
+cg:=cg+(cv28==green?abs(tu28-28):0)
+co:=co+(cv28==orange?abs(tu28-28):0)
+cb:=cb+(cv28==blue?abs(tu28-28):0)
+cr:=cr+(cv29==red?abs(tu29-29):0)
+cg:=cg+(cv29==green?abs(tu29-29):0)
+co:=co+(cv29==orange?abs(tu29-29):0)
+cb:=cb+(cv29==blue?abs(tu29-29):0)
+
+sm = 1
+
+wr = cr/30
+wg = cg/30
+wo = co/30
+wb = cb/30
+
+ps1 = 2*(s/15-1)-wg+wr-wo+wb
+pxx1=plot(ps1,color=black)
+ 
+rh= -0.5
+rl= rh-wr
+
+bl = -0.5
+bh = bl+wb
+
+gl = 0.5
+gh = gl+wg
+
+oh = 0.5
+ol = oh-wo
+
+pr1=plot(rh,color=na)
+pr2=plot(bl,color=na)
+pr3=plot(gl,color=na)
+pr4=plot(oh,color=na)
+pr11=plot(rl,color=na,style=area)
+pr22=plot(bh,color=na,style=area)
+pr33=plot(gh,color=na,style=area)
+pr44=plot(ol,color=na,style=area)
+
+fill(pr1,pr11,color=red,transp=60)
+fill(pr2,pr22,color=blue,transp=60)
+fill(pr3,pr33,color=green,transp=60)
+fill(pr4,pr44,color=orange,transp=60)

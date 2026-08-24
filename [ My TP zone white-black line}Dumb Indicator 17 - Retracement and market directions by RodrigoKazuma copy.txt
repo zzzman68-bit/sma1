@@ -1,0 +1,68 @@
+//version=3
+study(title="Dumb Fibonacci 17 - retracements difents", overlay=true)
+
+src0 = 	input(high,  title="Source 0")
+src1 = 	input(low,  title="Source 1")
+res = 	input(title="Resolution tIME", type=string, defval="M")
+lag = 	input(defval=1, title="Lag", minval=0, maxval=20, step=1)
+off = 	input(defval=0, title="Offset", minval=0, maxval=20, step=1)
+
+
+f0 = -3
+f1 = -2
+f2 = -1
+f3 = 0
+f4 = 1
+f5 = 1.5
+f6 = 2
+
+
+//tra = 	input(defval=30, title="Transp", minval=0, maxval=100, step=10)
+
+tra = 	0
+
+
+s0 = security(tickerid, res, src0[lag])
+s1 = security(tickerid, res, src1[lag])
+
+x = abs(s1-s0)
+m = max(s0, s1)
+
+out0 = swma(m-(x*f0))
+out1 = swma(m-(x*f1))
+out2 = swma(m-(x*f2))
+out3 = swma(m-(x*f3))
+out4 = max(swma(m-(x*f4)), low/2)
+out5 = max(swma(m-(x*f5)), low/2)
+out6 = max(swma(m-(x*f6)), low/2)
+
+
+
+
+p0 = plot(out0, linewidth=1, color=black, transp=tra, offset=off, title="Extreme Danger")
+p1 = plot(out1, linewidth=1, color=white, transp=tra, offset=off, title="danger")
+p2 = plot(out2, linewidth=1, color=yellow, transp=tra, offset=off, title="Upper")
+p3 = plot(out3, linewidth=1, color=lime, transp=tra, offset=off, title="Middle")
+p4 = plot(out4, linewidth=1, color=white, transp=tra, offset=off, title="Lower")
+p5 = plot(out5, linewidth=1, color=yellow, transp=tra, offset=off, title="Danger")
+p6 = plot(out6, linewidth=1, color=black, transp=tra, offset=off, title="Extreme Danger")
+
+
+c = 
+    (hl2 > out0) ? #00FFFF:
+    (hl2 > out1) ? #00FF7F:
+    (hl2 > out2) ? #00FF00:
+    (hl2 > out3) ? #7FFF00:
+    (hl2 > out4) ? #FFFF00:
+    (hl2 > out5) ? #FF7F00:
+    #FF0000
+
+
+//bgcolor(c)
+//plotbar(out2, out3, out4, out5, title="retracements bar", color=c)
+barcolor(c)
+
+dlow = low <= out6
+dhigh = high >= out0
+plotshape(dlow, style=shape.labelup, location=location.belowbar, color=lime)//, text="Danger")
+plotshape(dhigh,style=shape.labeldown, location=location.abovebar, color=red)//, text="Danger")

@@ -1,0 +1,378 @@
+//@version=3
+
+study("Bollinger Band Ribbon R2.1 by JustUncleL",overlay=true, shorttitle="s ")
+
+//
+// Author:    JustUncleL
+// Revision:  R2.0
+// Date:      25-Nov-2017
+//
+//
+// Description:
+//  This study is a Bollingar Band indicator that shows the fractional stddev levels between
+//  the main bands. You can choose upto 6 Stddev Main Levels (ie 6*StdDev), with 0,1,3,4, or 9
+//  fractional levels. 
+//
+//  Options Available:
+//  ------------------
+//  1) Can use different MA types for Basis of BB/KC : SMA, EMA, WMA and VWMA are good choices.
+//    
+//    - SMA     = Simple Moving Average.
+//    - EMA     = Exponential Moving Average.
+//    - WMA     = Weighted Moving Average
+//    - VWMA    = Volume Weighted Moving Average
+//    - SMMA    = Smoothed Simple Moving Average.
+//    - DEMA    = Double Exponential Moving Average
+//    - TEMA    = Triple Exponential Moving Average.
+//    - HullMA  = Hull Moving Average
+//    - SSMA    = Ehlers Super Smoother Moving average
+//    - SWMA    = Symetrical weighted MA with fixed length 4: wghts=[1/6,2/6,2/6,1/6]
+//    - ZEMA    = Near Zero Lag Exponential Moving Average.
+//    - TMA     = Triangular (smoothed) Simple Moving Average.
+//
+//  2) Option to display coloured Candles around the Ribbon, the coulouring uses
+//    the Standard candle colours:
+//    - Lime    = candle closed above Ribbon.
+//    - Red     = candle closed below Ribbon.
+//    - Gray    = Candle Closed inside Ribbon.
+//    the Grab candles scheme:
+//    - Lime    = Bull candle closed above Ribbon.
+//    - Green   = Bear candle closed above Ribbon.
+//    - Red     = Bull candle closed below Ribbon.
+//    - DarkRed = Bear candle closed below Ribbon.
+//    - Aqua    = Bull candle closed inside Ribbon.
+//    - Blue    = Bear candle closed inside Ribbon.
+// 
+//  3) Show previous days closing price.
+//
+//  4) Show Previous days High and Low prices.
+//
+//  5) Option to base the candles on a higher time frame (HFT) emulation:
+//     this performed by increasing the MA length to create equivalent lengths 
+//     from the HFT. This is an emulation so will not be exact.
+//     NOTE: The script will time out if the MA lengths get too long after resizing.
+//
+// Mofidifications:
+//  0.# - alpha/beta versions
+//
+//  1.0 - original Public script
+//
+//  2.0 Requested options, similar to my other Channel indicators like MA Ribbon:
+//      - Added Option to display coloured candles based on BB/KC channel breakout
+//        conditions.
+//      - Added Option to display only the Last Band when no SubLevels selected.
+//      - Added Option to use Anchor Time Frame to emulate Higher Time frame results.
+//      - Change some default colours.
+//
+//  2.1 - 12-Dec-2017
+//      - Added optional ATR smoothing for KC style channels
+//      - Added SWMA type moving average.
+//
+// References:
+//  - Sweetspot Gold R4 by JustUncleL
+//
+// -----------------------------------------------------------------------------
+// Copyright 2017 JustUncleL
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// The GNU General Public License can be found here
+// <http://www.gnu.org/licenses/>.
+//
+// -----------------------------------------------------------------------------
+//
+
+// === INPUTS
+
+// Use Alternate Anchor TF for MAs 
+anchor     = input(0,minval=0,maxval=1440,title="Use Alternate Anchor TimeFrame (0=none, max=1440 (mins,D,W)")
+//
+bbType    = input(defval="SMA", title="BB Basis MA Type: ", options=["SMA", "EMA", "WMA", "VWMA","SWMA", "SMMA", "DEMA", "TEMA", "HullMA", "ZEMA", "TMA", "SSMA"], type=string)
+bbLength_ = input(defval=200, title="BB Basis MA Length", minval=1)
+bbLevels_ = input(defval=3, minval=1, maxval=6, title = "Number of StdDev Levels", step=1)
+bbSubLvls = input(defval=1, title = "Number of StdDev SubLevels", options= [0,1,3,4,9], type=integer)
+src       = input(close,title="Source")
+bbLevels  = bbSubLvls==9 and bbLevels_>2? 2 : bbSubLvls==4 and bbLevels_>5? 5 : bbLevels_ // can only display 2 levels for 9 subs
+//
+uKC       = input(false,title="Use KC channel bands instead of Bollinger")
+atrLength = input(1,minval=1,title="ATR length for KC channel smoothing (1=true range)")
+sHiLo     = input(false,title="Show Previous Day's High Low Levels")
+sOpen     = input(false,title="Show Daily Open")
+sLast_    = input(false,title="Only Show the Out Band When Zero SubLevels")
+sBars     = input(false,title="Show Coloured Breakout Bars")
+uGrabClr  = input(false,title="Use Grab Candle Colouring Scheme")
+//
+sLast     = bbSubLvls>0? false: sLast_
+
+// Constants colours that include fully non-transparent option.
+green100 = #008000FF
+lime100  = #00FF00FF
+red100   = #FF0000FF
+blue100  = #0000FFFF
+aqua100  = #00FFFFFF
+darkred100 = #8B0000FF
+gray100 = #808080FF
+
+//
+DodgerBlue = #1E90FF
+Gold = #FFD700
+
+// Calculate Anchor Length Multiplier from Period
+mult = not isintraday or anchor==0 or interval<=0 or interval>=anchor or anchor>1440 ? 1 : round(anchor/interval)>1? round(anchor/interval) : 1
+mult := isintraday or anchor==0 or interval<=0 or interval>=anchor or anchor>52 ? mult : round(anchor/interval)>1? round(anchor/interval) : 1 
+
+// Adjust length.
+bbLength = mult==1 ? bbLength_ : (bbLength_ * mult)
+
+// === /INPUTS END
+
+// === FUNCTIONS
+
+// --- variant(type, src, len)
+
+// Returns MA input selection variant, default to SMA if blank or typo.
+
+// Sub routines for Variant
+// SuperSmoother filter
+// © 2013  John F. Ehlers
+variant_supersmoother(src,len) =>
+    a1 = exp(-1.414*3.14159 / len)
+    b1 = 2*a1*cos(1.414*3.14159 / len)
+    c2 = b1
+    c3 = (-a1)*a1
+    c1 = 1 - c2 - c3
+    v9 = 0.0
+    v9 := c1*(src + nz(src[1])) / 2 + c2*nz(v9[1]) + c3*nz(v9[2])
+    v9
+    
+variant_smoothed(src,len) =>
+    v5 = 0.0
+    v5 := na(v5[1]) ? sma(src, len) : (v5[1] * (len - 1) + src) / len
+    v5
+
+variant_zerolagema(src,len) =>
+    ema1 = ema(src, len)
+    ema2 = ema(ema1, len)
+    v10 = ema1+(ema1-ema2)
+    v10
+    
+variant_doubleema(src,len) =>
+    v2 = ema(src, len)
+    v6 = 2 * v2 - ema(v2, len)
+    v6
+
+variant_tripleema(src,len) =>
+    v2 = ema(src, len)
+    v7 = 3 * (v2 - ema(v2, len)) + ema(ema(v2, len), len)               // Triple Exponential
+    v7
+    
+// return variant, defaults to SMA 
+variant(type, src, len) =>
+    type=="EMA"     ? ema(src,len) : 
+      type=="WMA"   ? wma(src,len): 
+      type=="VWMA"  ? vwma(src,len) : 
+      type=="SMMA"  ? variant_smoothed(src,len) : 
+      type=="DEMA"  ? variant_doubleema(src,len): 
+      type=="TEMA"  ? variant_tripleema(src,len): 
+      type=="HullMA"? wma(2 * wma(src, len / 2) - wma(src, len), round(sqrt(len))) :
+      type=="SSMA"  ? variant_supersmoother(src,len) : 
+      type=="ZEMA"  ? variant_zerolagema(src,len) : 
+      type=="SWMA"  ? swma(src) : 
+      type=="TMA"   ? sma(sma(src,len),len) : 
+                      sma(src,len)
+
+// --- /variant 
+
+// === /FUNCTIONS END
+
+// === SERIES
+
+// Standard Bollinger or KC Bands
+basis   = variant(bbType, src, bbLength)
+ATR     = atrLength==1? tr : atr(atrLength)
+rangema = variant(bbType, ATR, bbLength)
+stdDev  = stdev(src, bbLength)
+dev   = uKC? rangema : stdDev
+// Sub Levels increment
+INC   = dev/(bbSubLvls+1.0)
+
+// Calculate range to restrict plotting
+maxUpper = basis + bbLevels*dev
+minLower = basis - bbLevels*dev
+
+// Calculate Main Upper levels 
+ZH_100 = basis + dev
+ZH_200 = basis + 2*dev
+ZH_300 = basis + 3*dev
+ZH_400 = basis + 4*dev
+ZH_500 = basis + 5*dev
+ZH_600 = basis + 6*dev
+// Calculate Main Upper levels 
+ZL_100 = basis - dev
+ZL_200 = basis - 2*dev
+ZL_300 = basis - 3*dev
+ZL_400 = basis - 4*dev
+ZL_500 = basis - 5*dev
+ZL_600 = basis - 6*dev
+//
+
+// Calculate Upper Sub levels 
+H_001 = basis + INC
+H_002 = H_001 + INC
+H_003 = H_002 + INC
+H_004 = H_003 + INC
+H_005 = H_004 + INC
+H_006 = H_005 + INC
+H_007 = H_006 + INC
+H_008 = H_007 + INC
+H_009 = H_008 + INC
+H_010 = H_009 + INC
+H_011 = H_010 + INC
+H_012 = H_011 + INC
+H_013 = H_012 + INC
+H_014 = H_013 + INC
+H_015 = H_014 + INC
+H_016 = H_015 + INC
+H_017 = H_016 + INC
+H_018 = H_017 + INC
+H_019 = H_018 + INC
+H_020 = H_019 + INC
+H_021 = H_020 + INC
+H_022 = H_021 + INC
+H_023 = H_022 + INC
+//H_024 = H_023 + INC
+
+// Calculate Lower Sub levels 
+L_001 = basis - INC
+L_002 = L_001 - INC
+L_003 = L_002 - INC
+L_004 = L_003 - INC
+L_005 = L_004 - INC
+L_006 = L_005 - INC
+L_007 = L_006 - INC
+L_008 = L_007 - INC
+L_009 = L_008 - INC
+L_010 = L_009 - INC
+L_011 = L_010 - INC
+L_012 = L_011 - INC
+L_013 = L_012 - INC
+L_014 = L_013 - INC
+L_015 = L_014 - INC
+L_016 = L_015 - INC
+L_017 = L_016 - INC
+L_018 = L_017 - INC
+L_019 = L_018 - INC
+L_020 = L_019 - INC
+L_021 = L_020 - INC
+L_022 = L_021 - INC
+L_023 = L_022 - INC
+//L_024 = L_023 - INC
+
+start = security(ticker,"D", time, barmerge.gaps_off, barmerge.lookahead_on)
+first = security(ticker,"D",valuewhen(barstate.islast,time,0), barmerge.gaps_off, barmerge.lookahead_on)
+newDay = change(start)
+
+
+// Calculate Annualised Volatility
+
+hinow = high
+hinow := newDay ? high : high>hinow[1] ? high : hinow[1]
+lonow = low
+lonow := newDay ? low : low<lonow[1] ? low : lonow[1]
+
+prevhi =  valuewhen(newDay,hinow[1],0)
+prevlo =  valuewhen(newDay,lonow[1],0)
+settlement = valuewhen(start[1]<=time, src, 0)
+settlement := newDay ? settlement  : nz(settlement[1],open[1])
+
+// === /SERIES END
+
+// === PLOTTING
+//
+plot(isintraday and sOpen? settlement:na, color = purple, title = "PREV CLOSE",linewidth=2, transp=10)
+plot(isintraday and sHiLo? prevhi:na, color = green, title = "PREV HI",linewidth=2, transp=10,style=cross,join=true)
+plot(isintraday and sHiLo? prevlo:na, color = red, title = "PREV LO",linewidth=2, transp=10,style=cross,join=true)
+
+// Colour bars according to the close position relative to the MA selected
+// Or Grab candle colour code bars according to the close position relative to the MA selected
+grabcol = uGrabClr?  close>=open? close>minLower and close>maxUpper? lime100 : close<minLower and close<maxUpper? red100 : aqua100 : 
+                     close>minLower and close>maxUpper? green100 : close<minLower and close<maxUpper? darkred100 : blue100 : na
+stdcol  = uGrabClr? na : close>minLower and close>maxUpper ? lime100 : close<minLower and close<maxUpper? red100 : gray100 
+
+barcolor(sBars?uGrabClr? grabcol: stdcol:na, title = "Bar Colours")
+
+// Plot the main levels first
+plot( ZH_600>maxUpper?na: not sLast or ZH_600==maxUpper?ZH_600:na, title="Upper 600", color=purple, linewidth=2, transp=0)
+plot( ZH_500>maxUpper?na: not sLast or ZH_500==maxUpper?ZH_500:na, title="Upper 500", color=fuchsia,  linewidth=2, transp=0)
+plot( ZH_400>maxUpper?na: not sLast or ZH_400==maxUpper?ZH_400:na, title="Upper 400", color=red,  linewidth=2, transp=0)
+plot( ZH_300>maxUpper?na: not sLast or ZH_300==maxUpper?ZH_300:na, title="Upper 300", color=orange,  linewidth=2, transp=0)
+plot( ZH_200>maxUpper?na: not sLast or ZH_200==maxUpper?ZH_200:na, title="Upper 200", color=Gold,  linewidth=2, transp=0)
+plot( not sLast or ZH_100==maxUpper?ZH_100:na, title="Upper 100", color=lime,  linewidth=2, transp=0)
+plot( basis, title="basis", color=DodgerBlue,  linewidth=2,join=true,style=circles, transp=0)
+plot( not sLast or ZL_100==minLower?ZL_100:na, title="Lower 100", color=lime,  linewidth=2, transp=0)
+plot( ZL_200<minLower?na:not sLast or ZL_200==minLower?ZL_200:na, title="Lower 200", color=Gold,  linewidth=2, transp=0)
+plot( ZL_300<minLower?na:not sLast or ZL_300==minLower?ZL_300:na, title="Lower 300", color=orange,  linewidth=2, transp=0)
+plot( ZL_400<minLower?na:not sLast or ZL_400==minLower?ZL_400:na, title="Lower 400", color=red,  linewidth=2, transp=0)
+plot( ZL_500<minLower?na:not sLast or ZL_500==minLower?ZL_500:na, title="Lower 500", color=fuchsia,  linewidth=2, transp=0)
+plot( ZL_600<minLower?na:not sLast or ZL_600==minLower?ZL_600:na, title="Lower 600", color=purple,  linewidth=2, transp=0)
+
+// Plot all the Sub-levels some will overwrite the main Levels
+plot( bbSubLvls==0 or H_023>maxUpper?na:H_023, title="+23", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_022>maxUpper?na:H_022, title="+22", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_021>maxUpper?na:H_021, title="+21", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_020>maxUpper?na:H_020, title="+20", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_019>maxUpper?na:H_019, title="+19", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_018>maxUpper?na:H_018, title="+18", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_017>maxUpper?na:H_017, title="+17", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_016>maxUpper?na:H_016, title="+16", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_015>maxUpper?na:H_015, title="+15", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_014>maxUpper?na:H_014, title="+14", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_013>maxUpper?na:H_013, title="+13", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_012>maxUpper?na:H_012, title="+12", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_011>maxUpper?na:H_011, title="+11", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_010>maxUpper?na:H_010, title="+10", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_009>maxUpper?na:H_009, title="+09", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_008>maxUpper?na:H_008, title="+08", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_007>maxUpper?na:H_007, title="+07", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_006>maxUpper?na:H_006, title="+06", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_005>maxUpper?na:H_005, title="+05", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_004>maxUpper?na:H_004, title="+04", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_003>maxUpper?na:H_003, title="+03", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or H_002>maxUpper?na:H_002, title="+02", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0?na:H_001, title="+01", color=gray,  linewidth=1, transp=40)
+//
+plot( bbSubLvls==0?na:L_001, title="-01", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_002<minLower?na:L_002, title="-02", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_003<minLower?na:L_003, title="-03", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_004<minLower?na:L_004, title="-04", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_005<minLower?na:L_005, title="-05", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_006<minLower?na:L_006, title="-06", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_007<minLower?na:L_007, title="-07", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_008<minLower?na:L_008, title="-08", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_009<minLower?na:L_009, title="-09", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_010<minLower?na:L_010, title="-10", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_011<minLower?na:L_011, title="-11", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_012<minLower?na:L_012, title="-12", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_013<minLower?na:L_013, title="-13", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_014<minLower?na:L_014, title="-14", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_015<minLower?na:L_015, title="-15", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_016<minLower?na:L_016, title="-16", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_017<minLower?na:L_017, title="-17", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_018<minLower?na:L_018, title="-18", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_019<minLower?na:L_019, title="-19", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_020<minLower?na:L_020, title="-20", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_021<minLower?na:L_021, title="-21", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_022<minLower?na:L_022, title="-22", color=gray,  linewidth=1, transp=40)
+plot( bbSubLvls==0 or L_023<minLower?na:L_023, title="-23", color=gray,  linewidth=1, transp=40)
+
+// === /PLOTTING
+
+//eof

@@ -1,0 +1,29 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ceyhun
+
+
+//This indicator shows the possible dollar return (on a $10,000 account) for a security on any given period. 
+//This is calculated by dividing a $10,000 account by the closing price. 
+//This number is then multiplied by the average range of the security for the last 200 periods. 
+//The interpretation is such that the higher the value, the higher the profit potential.
+
+//Trading day 252 https://en.wikipedia.org/wiki/Trading_day
+
+//@version=4
+study("Bang For The Buck",overlay=false)
+plen=input(10000,"The Possible Dollar Return")
+alen=input(200,"Period")
+wlen=input(defval=252,title="52 Week Length")
+
+BFTB = plen / close * sma(atr(1), alen) / 100
+
+//52 Week High Low
+High52 = highest(BFTB, wlen)
+Low52 = lowest(BFTB, wlen)
+
+plot(BFTB,title="BFTB",linewidth=1, color=color.green)
+plot(High52, "52 Week High", linewidth=1, color=#0000ff)
+plot(Low52, "52 Week Low", linewidth=1, color=#ff0000)
+
+bgcolor(abs(BFTB - High52[1]) > BFTB ? #ff0000 : BFTB < High52 ? #ffffff : #0000ff, offset=0)
+

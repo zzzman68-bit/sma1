@@ -1,0 +1,153 @@
+//@version=5
+indicator(title="Bollinger Band ribbon", shorttitle="BB ribbon", precision=6, overlay=true)
+
+// Inputs
+src = input.source(hlc3, title="Source")
+mult = input.float(3.0, minval=0.001, maxval=50)
+pl_rib_lines=true
+devMult = input.float(defval=0.618, title="Use fib value for Bollinger band lines", minval=0.001, maxval=1, step=0.001)
+
+length_bb1=input.int(defval=20, title="Bollinger bands 1 length", minval=1)
+length_bb2=input.int(defval=40, title="Bollinger bands 2 length", minval=1)
+length_bb3=input.int(defval=60, title="Bollinger bands 3 length", minval=1)
+length_bb4=input.int(defval=80, title="Bollinger bands 4 length", minval=1)
+length_bb5=input.int(defval=100, title="Bollinger bands 5 length", minval=1)
+length_bb6=input.int(defval=120, title="Bollinger bands 6 length", minval=1)
+length_bb7=input.int(defval=140, title="Bollinger bands 7 length", minval=1)
+length_bb8=input.int(defval=160, title="Bollinger bands 8 length", minval=1)
+length_bb9=input.int(defval=180, title="Bollinger bands 9 length", minval=1)
+length_bb10=input.int(defval=200, title="Bollinger bands 10 length", minval=1)
+bb_basis_length=input.int(defval = 200, minval=1, title="Bollinger band bassis plot length")
+
+old_sett=false //input(defval = false, title="New settings enabled")
+if old_sett==true
+    length_bb1:=30
+    length_bb2:=66
+    length_bb3:=102
+    length_bb4:=138
+    length_bb5:=174
+    length_bb6:=210
+    length_bb7:=246
+    length_bb8:=282
+    length_bb9:=318
+    length_bb10:=360
+    
+
+// Bollinger Bands Function
+bollingerBands(src, length, mult, devMult) =>
+    basis = ta.sma(src, length)
+    dev = mult * ta.stdev(src, length)
+    upper = basis + (devMult * dev)
+    lower = basis - (devMult * dev)
+    [upper, lower]
+
+// Calculate and Plot Bollinger Bands
+[upper_618_r1, lower_618_r1]=bollingerBands(close, length_bb1, mult, devMult)
+[upper_618_r2, lower_618_r2]=bollingerBands(close, length_bb2, mult, devMult)
+[upper_618_r3, lower_618_r3]=bollingerBands(close, length_bb3, mult, devMult)
+[upper_618_r4, lower_618_r4]=bollingerBands(close, length_bb4, mult, devMult)
+[upper_618_r5, lower_618_r5]=bollingerBands(close, length_bb5, mult, devMult)
+[upper_618_r6, lower_618_r6]=bollingerBands(close, length_bb6, mult, devMult)
+[upper_618_r7, lower_618_r7]=bollingerBands(close, length_bb7, mult, devMult)
+[upper_618_r8, lower_618_r8]=bollingerBands(close, length_bb8, mult, devMult)
+[upper_618_r9, lower_618_r9]=bollingerBands(close, length_bb9, mult, devMult)
+[upper_618_r10, lower_618_r10]=bollingerBands(close, length_bb10, mult, devMult)
+[upper_1_r10, lower_1_r10]=bollingerBands(close, length_bb10, mult, 1)
+
+bb_10_color_upper=input.color(defval = color.new(color.yellow,0), title="BB 10 color upper") //color.new(#ff0000,0)
+bb_10_color_lower=input.color(defval = color.new(color.yellow,0), title="BB 10 color lower") //color.new(#0c9c00,0)
+bb_1_color_upper=input.color(defval = color.new(#ffafaf,0), title="BB 1 color upper") //color.new(#ff0000,0)
+bb_1_color_lower=input.color(defval = color.new(#a3aaa4, 0), title="BB 1 color upper") //color.new(#ff0000,0)
+r9l=plot(pl_rib_lines ? lower_618_r9 : na, color=color.new(#0000ff,0), linewidth=1, title="-0.618 r9", display = display.pane)
+r8l=plot(pl_rib_lines ? lower_618_r8 : na, color=color.new(#003eff,10), linewidth=1, title="-0.618 r8", display = display.pane)
+r7l=plot(pl_rib_lines ? lower_618_r7 : na, color=color.new(#005aff,0), linewidth=1, title="-0.618 r7", display = display.pane)
+r6l=plot(pl_rib_lines ? lower_618_r6 : na, color=color.new(#0070ff,0), linewidth=1, title="-0.618 r6", display = display.pane)
+r5l=plot(pl_rib_lines ? lower_618_r5 : na, color=color.new(#0083ff,0), linewidth=1, title="-0.618 r5", display = display.pane)
+r4l=plot(pl_rib_lines ? lower_618_r4 : na, color=color.new(#0094ff,0), linewidth=1, title="-0.618 r4", display = display.pane)
+r3l=plot(pl_rib_lines ? lower_618_r3 : na, color=color.new(#00a4ff,0), linewidth=1, title="-0.618 r3", display = display.pane)
+r2l=plot(pl_rib_lines ? lower_618_r2 : na, color=color.new(#00b3ff,0), linewidth=1, title="-0.618 r2", display = display.pane)
+
+r9u=plot(pl_rib_lines ? upper_618_r9 : na, color=color.new(#0000ff,0), linewidth=1, title="+0.618 r9", display = display.pane)
+r8u=plot(pl_rib_lines ? upper_618_r8 : na, color=color.new(#003eff,10), linewidth=1, title="+0.618 r8", display = display.pane)
+r7u=plot(pl_rib_lines ? upper_618_r7 : na, color=color.new(#005aff,0), linewidth=1, title="+0.618 r7", display = display.pane)
+r6u=plot(pl_rib_lines ? upper_618_r6 : na, color=color.new(#0070ff,0), linewidth=1, title="+0.618 r6", display = display.pane)
+r5u=plot(pl_rib_lines ? upper_618_r5 : na, color=color.new(#0083ff,0), linewidth=1, title="+0.618 r5", display = display.pane)
+r4u=plot(pl_rib_lines ? upper_618_r4 : na, color=color.new(#0094ff,0), linewidth=1, title="+0.618 r4", display = display.pane)
+r3u=plot(pl_rib_lines ? upper_618_r3 : na, color=color.new(#00a4ff,0), linewidth=1, title="+0.618 r3", display = display.pane)
+r2u=plot(pl_rib_lines ? upper_618_r2 : na, color=color.new(#00b3ff,0), linewidth=1, title="+0.618 r2", display = display.pane)
+
+r1u=plot(pl_rib_lines ? upper_618_r1 : na, color=bb_1_color_upper, linewidth=2, title="+0.618 r1", display = display.pane)
+r1l=plot(pl_rib_lines ? lower_618_r1 : na, color=bb_1_color_lower, linewidth=2, title="-0.618 r1", display = display.pane)
+r10u=plot(pl_rib_lines ? upper_618_r10 : na, color=bb_10_color_upper, linewidth=2, title="+0.618 r10", display = display.pane)
+r10l=plot(pl_rib_lines ? lower_618_r10 : na, color=bb_10_color_lower, linewidth=2, title="-0.618 r10", display = display.pane)
+l1c=color.new(color.black,50)
+u1c=color.new(color.black,50)
+lo_upper=math.min(upper_618_r1, upper_618_r10, upper_618_r2,upper_618_r3,upper_618_r4,upper_618_r5,upper_618_r6,upper_618_r7,upper_618_r8,upper_618_r9)
+hi_lower=math.max(lower_618_r1,lower_618_r10,lower_618_r2,lower_618_r3,lower_618_r4,lower_618_r5,lower_618_r6,lower_618_r7,lower_618_r8,lower_618_r9)
+if upper_618_r1<upper_618_r10 and lower_618_r1<lower_618_r10 and close<ta.sma(close, bb_basis_length) and hi_lower==lower_618_r10
+    u1c:=color.new(color.red,0)
+    l1c:=color.new(color.red, 0)
+if lower_618_r1>lower_618_r10 and upper_618_r1>upper_618_r10 and close>ta.sma(close, bb_basis_length) and lo_upper==upper_618_r10
+    l1c:=color.new(color.green,0)
+    u1c:=color.new(color.green, 0)
+
+plot(pl_rib_lines ? upper_1_r10 : na, color=u1c, linewidth=2, title="+1 r10", display = display.pane)
+plot(pl_rib_lines ? lower_1_r10 : na, color=l1c, linewidth=2, title="-1 r10", display = display.pane)
+plot(ta.sma(close, bb_basis_length), color=color.blue, title="Basis Bollinger Band 10")
+transp=input.int(defval = 80, minval=0, maxval=100, title="Bb fill color transparency")
+fill(r10u,r9u, color = color.new(#0000ff, transp))
+fill(r9u,r8u, color = color.new(#003aff, transp))
+fill(r8u,r7u, color = color.new(#0054ff, transp))
+fill(r7u,r6u, color = color.new(#0068ff, transp))
+fill(r6u,r5u, color = color.new(#007aff, transp))
+fill(r5u,r4u, color = color.new(#008aff, transp))
+fill(r4u,r3u, color = color.new(#0098ff, transp))
+fill(r3u,r2u, color = color.new(#00a6ff, transp))
+fill(r2u,r1u, color = color.new(#00b3ff, transp))
+
+fill(r2l,r1l, color = color.new(#00b3ff, transp))
+fill(r3l,r2l, color = color.new(#00a6ff, transp))
+fill(r4l,r3l, color = color.new(#0098ff, transp))
+fill(r5l,r4l, color = color.new(#008aff, transp))
+fill(r6l,r5l, color = color.new(#007aff, transp))
+fill(r7l,r6l, color = color.new(#0068ff, transp))
+fill(r8l,r7l, color = color.new(#0054ff, transp))
+fill(r9l,r8l, color = color.new(#003aff, transp))
+fill(r10l,r9l, color = color.new(#0000ff, transp))
+
+upper_min=math.min(upper_618_r1, upper_618_r2, upper_618_r3, upper_618_r4, upper_618_r5, upper_618_r6, upper_618_r7, upper_618_r8, upper_618_r9, upper_618_r10)
+upper_max=math.max(upper_618_r1, upper_618_r2, upper_618_r3, upper_618_r4, upper_618_r5, upper_618_r6, upper_618_r7, upper_618_r8, upper_618_r9, upper_618_r10)
+upper_dif=upper_max-upper_min
+upper_dif_pct=(upper_dif/close)*100
+
+lower_min=math.min(lower_618_r1, lower_618_r2, lower_618_r3, lower_618_r4,lower_618_r5, lower_618_r6, lower_618_r7, lower_618_r8, lower_618_r9, lower_618_r10)
+lower_max=math.max(lower_618_r1, lower_618_r2, lower_618_r3, lower_618_r4,lower_618_r5, lower_618_r6, lower_618_r7, lower_618_r8, lower_618_r9, lower_618_r10)
+lower_dif=lower_max-lower_min
+lower_dif_pct=(lower_dif/close)*100
+
+alertcondition(close>upper_min or close<lower_max, 'Exiting middle channel', 'Exiting middle channel {{ticker}} {{exchange}} {{interval}}')
+
+lkb=60//input.int(defval = 60, minval = 1, maxval = 180)
+bsc=3//input.int(defval = 3, minval = 1, maxval = 10)
+bscu_upper=ta.barssince(ta.crossunder(close, upper_max))
+bsco_lower=ta.barssince(ta.crossover(close, lower_min))
+bsco_upper=ta.barssince(ta.crossover(close, upper_max))
+bscu_lower=ta.barssince(ta.crossunder(close, lower_min))
+
+length =20// input(20, title="Volme ma length")
+
+vol=volume
+vol_ma=ta.ema(volume, length)
+cross_lkb=3//input.int(3, title="Breakout length", minval = 1)
+bull=if ta.crossover(close, upper_max) and vol>vol_ma and ta.barssince(ta.crossover(close,upper_min))<cross_lkb and upper_dif<lower_dif
+    bull=low
+bear= if ta.crossunder(close, lower_min) and vol>vol_ma and ta.barssince(ta.crossunder(close, lower_max))<cross_lkb and lower_dif<upper_dif
+    bear=high
+plotchar(bear, title="Bear breakout", char="🐻", location = location.abovebar, color=color.white, size = size.tiny)
+plotchar(bull, title="Bull breakout", char="🐂", location = location.belowbar, color=color.white, size = size.tiny)
+alertcondition(bear, 'Bull', 'Bull {{ticker}} {{exchange}} {{interval}}')
+alertcondition(bull, 'Bear', 'Bear {{ticker}} {{exchange}} {{interval}}')
+alertcondition(close>upper_max or close<lower_min, 'Price outside BB ribbon', 'Price outside BB ribbon {{ticker}} {{exchange}} {{interval}}')
+
+alertcondition(u1c==color.new(color.red,0), 'Red color BB 10', 'Red color BB 10 {{ticker}} {{exchange}} {{interval}}')
+alertcondition(u1c==color.new(color.green,0), 'Green color BB 10', 'Greeb color BB 10 {{ticker}} {{exchange}} {{interval}}')
