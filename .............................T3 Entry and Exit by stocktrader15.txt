@@ -1,0 +1,27 @@
+study(title="T3 Entry and Exit", shorttitle="T3EE")
+Length = input(34, minval=1)
+hline(0, color=gray, linestyle=line)
+xPrice = close
+xe1 = ema(xPrice, Length)
+xe2 = ema(xe1, Length)
+xe3 = ema(xe2, Length)
+xe4 = ema(xe3, Length)
+xe5 = ema(xe4, Length)
+xe6 = ema(xe5, Length)
+b = 0.7
+c1 = -b*b*b
+c2 = 3*b*b+3*b*b*b
+c3 = -6*b*b-3*b-3*b*b*b
+c4 = 1+3*b+b*b*b+3*b*b
+nT3Average = c1 * xe6 + c2 * xe5 + c3 * xe4 + c4 * xe3
+nSlope = nT3Average - nT3Average[2]
+Res1 = nSlope
+Res2 = nSlope[1]
+Res3 = nT3Average - nT3Average[1]
+plot(iff(Res2 > 10 or Res3 > 10,na, Res1), color=blue, title="Slope")
+plot(iff(Res2 > 10 or Res3 > 10,na, Res2), color=red, title="Slope2")
+xover = cross(Res1, Res2) ? avg(Res1, Res2) : na
+
+plot(xover, style=circles, color=green , linewidth=4)
+band2 = hline(.0003, title="Upper Line", linestyle=dashed, linewidth=2, color=red)
+band1 = hline(-.0003, title="Lower Line", linestyle=dashed, linewidth=2, color=lime)
