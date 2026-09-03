@@ -1,0 +1,287 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TFlab
+//@version=5
+
+indicator("CandleStick... [BY TradingFinder]", overlay = true)
+
+ATR = ta.atr(21)
+
+
+Show_PB = input.bool(true, "Show Pin Bar")
+Show_DC = input.bool(true, "Show Dark Cloud")
+Show_PL = input.bool(true, "Show Piercing Line")
+Show_IB = input.bool(true, "Show 3 Inside bar")
+Show_E = input.bool(true, "Show Engulfing")
+
+candle_range = high - low
+candle_body = (close - open)
+cod_pos_candle = candle_body > 0 
+cod_neg_candle = candle_body < 0
+cod_full_body = math.abs((candle_body/candle_range)) > 0.6
+cod_full_bodyIB = math.abs((candle_body/candle_range)) 
+//Dark Cloud
+codDC1 = open >= close[1]//Weak condition
+codDC2 = open >= high[1]//Strong condition
+codDC3 = high > high[1]
+
+//Piercing Line
+codPL1 = open <= close[1]//Weak condition
+codPL2 = open <= low[1]//Strong condition
+codPL3 = low < low[1]
+
+//Dark Cloud
+first_checkDC = cod_pos_candle[1] and cod_neg_candle 
+
+//Piercing Line
+first_checkPL = cod_pos_candle and cod_neg_candle[1] 
+
+//Dark Cloud
+cod_semi_cloud = (close < close[1]) and (close >  ((low[1] + ((high[1] - low[1])*0.5))))
+cod_full_cloud = (close <=  (low[1] + ((high[1] - low[1])*0.5)))
+
+//Piercing Line
+cod_semi_cloudPL = close > close[1] and close >  (low[1] + (high[1] - low[1])*0.5)
+cod_full_cloudPL = close >=  (low[1] + (high[1] - low[1])*0.5)
+
+//Dark Cloud
+cod_WDC1 = (codDC1 and codDC3 and cod_full_body   and cod_full_body[1] and cod_semi_cloud)
+cod_WDC2 = (codDC2 and codDC3 and cod_full_body and cod_full_body[1] and cod_semi_cloud)
+cod_WDC3 = (codDC1 and codDC3 and cod_full_body and cod_full_body[1] and cod_full_cloud)
+cod_SDC = (codDC2 and codDC3 and cod_full_body and cod_full_body[1] and cod_full_cloud)
+
+//Piercing Line
+cod_WPL1 = (codPL1 and codPL3 and cod_full_body and cod_full_body[1] and cod_semi_cloudPL)
+cod_WPL2 = (codPL2 and codPL3 and cod_full_body and cod_full_body[1] and cod_semi_cloudPL)
+cod_WPL3 = (codPL1 and codPL3 and cod_full_body and cod_full_body[1] and cod_full_cloudPL)
+cod_SPL = (codPL2 and codPL3 and cod_full_body and cod_full_body[1] and cod_full_cloudPL)
+
+//Dark Cloud
+Weak_DarkCloud = if first_checkDC 
+    cod_WDC1 or cod_WDC2 or cod_WDC3
+
+
+Strong_Darkcloud = if first_checkDC
+    cod_SDC
+
+if Strong_Darkcloud == true
+    Weak_DarkCloud:= false
+
+//Piercing Line
+
+Weak_PiercingLine = if first_checkPL
+    cod_WPL1 or cod_WPL2 or cod_WPL3
+
+
+Strong_PiercingLine = if first_checkPL 
+    cod_SPL
+
+if Strong_PiercingLine == true
+    Weak_PiercingLine:= false
+
+// Bullish 3 Inside bar 
+inside_bar_Bull_W = cod_neg_candle[2] and cod_pos_candle and cod_full_bodyIB >= 0.6 and 
+ cod_full_bodyIB <= 0.8 and close > high[1] and close > ((low[2] + high[2]) / 2) and 
+ high[1] < high[2] and low[2] > low[1]
+
+inside_bar_Bull_S = cod_neg_candle[2] and cod_pos_candle and cod_full_bodyIB > 0.8 and 
+ close > high[1] and close > ((low[2] + high[2]) / 2) and 
+ high[1] < high[2] and low[2] > low[1]
+
+// Bearish 3 Inside bar 
+inside_bar_Bear_W = cod_neg_candle and cod_pos_candle[2] and cod_full_bodyIB >= 0.6 and 
+ cod_full_bodyIB <= 0.8 and close < low[1] and close < ((low[2] + high[2]) / 2) and 
+ high[1] > high[2] and low[2] < low[1]
+
+inside_bar_Bear_S = cod_neg_candle and cod_pos_candle[2] and cod_full_bodyIB > 0.8 and 
+ close < low[1] and close < ((low[2] + high[2]) / 2) and 
+ high[1] > high[2] and low[2] < low[1]
+
+//Engulfing
+
+trend = high[3] - low[1] 
+power_trend = math.abs(trend / ATR) 
+
+check_trendBu =  high[3] - low[1] > 0 and power_trend > 2
+check_trendBe =  high[1] - low[3] < 0 and power_trend > 2
+
+
+engulfungWBu = high >= high[1] and close > open[1] and check_trendBu and candle_body[1] < 0 and candle_range > 1.2 *ATR and cod_full_bodyIB  > 0.6 and cod_full_bodyIB  <= 0.75
+engulfungSBu = close > high[1] and check_trendBu and candle_body[1] < 0 and candle_range > 1.2 *ATR and cod_full_bodyIB  > 0.75
+
+
+engulfungWBe = low <= low[1] and close < open[1] and check_trendBe and candle_body[1] > 0 and candle_range > 1.2 *ATR and cod_full_bodyIB  > 0.6 and cod_full_bodyIB  <= 0.75
+engulfungSBe = close < low[1] and check_trendBe and candle_body[1] > 0 and candle_range > 1.2 *ATR and cod_full_bodyIB  > 0.75
+
+//Pin Bar | Hammer | Shooting Star 
+
+//Bullish PinBar
+Pass = 1 
+
+
+BullPinBar1 = if candle_body > 0 
+    if high != close or high != open
+        (open - low) / candle_body >= 3 and 
+         (open - low ) / (high - close) >= 4
+    else
+        (open - low) / candle_body >= 3
+else if  candle_body < 0 
+    if high != close or high != open
+        (close - low) / math.abs(candle_body) >= 3 and 
+         (close - low) / (high - open) >= 4
+    else
+        (close - low) / math.abs(candle_body) >= 3
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+BullPinBar2 = if candle_body > 0 
+    if high != close or high != open
+        (open - low) / candle_body >= 3 and 
+         (open - low ) / (high - close) >= 4
+    else
+        (open - low) / candle_body >= 3
+else if  candle_body < 0 
+    if high != close or high != open
+        (close - low) / math.abs(candle_body) >= 3 and 
+         (close - low) / (high - open) >= 4
+    else
+        (close - low) / math.abs(candle_body) >= 3
+
+//Bearish PinBar
+
+BearPinBar1 = if candle_body > 0 
+    if low != close or low != open
+        (high - close) / candle_body >= 3 and 
+         (high - close ) / (open - low) >= 4
+    else
+        (high - close) / candle_body >= 3
+else if candle_body < 0 
+    if low != close or low != open
+        (high - open) / math.abs(candle_body) >= 3 and 
+         (high - open) / (close - low) >= 4
+    else
+        (high - open) / math.abs(candle_body) >= 3
+
+
+BearPinBar2 = if candle_body > 0 
+    if low != close or low != open
+        (high - close) / candle_body >= 3 and 
+         (high - close ) / (open - low) >= 4
+    else
+        (high - close) / candle_body >= 3
+else if candle_body < 0 
+    if low != close or low != open
+        (high - open) / math.abs(candle_body) >= 3 and 
+         (high - open) / (close - low) >= 4
+    else
+        (high - open) / math.abs(candle_body) >= 3
+
+
+
+
+
+/////////////////////////////////Plot\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+//Dark Cloud
+plotshape(Weak_DarkCloud and Show_DC, "Weak Dark Cloud",
+      style= shape.labeldown,
+      location = location.abovebar,
+      color = color.rgb(0, 0, 0),
+      size = size.tiny,
+      text = 'WDC',
+      textcolor = color.rgb(255, 255, 255))
+
+plotshape(Strong_Darkcloud and Show_DC, "Strong Dark Cloud",
+      style= shape.labeldown,
+      location = location.abovebar,
+      color = color.rgb(219, 48, 48),
+      size = size.tiny,
+      text = 'SDC',
+      textcolor = color.rgb(255, 255, 255))
+barcolor((Strong_Darkcloud or Weak_DarkCloud ) ? color.rgb(0, 0, 0) : na , title = 'Dark Cloud Candle Color')
+
+//Piercing Line
+plotshape(Weak_PiercingLine and Show_PL, "Weak Piercing Line",
+      style= shape.labelup,
+      location = location.belowbar,
+      color = color.rgb(15, 95, 201),
+      size = size.tiny,
+      text = 'WPL',
+      textcolor = color.rgb(255, 255, 255))
+
+plotshape(Strong_PiercingLine and Show_PL, "Strong Piercing Line",
+      style= shape.labelup,
+      location = location.belowbar,
+      color = color.rgb(25, 199, 31),
+      size = size.tiny,
+      text = 'SPL',
+      textcolor = color.rgb(255, 255, 255))
+
+barcolor((Weak_PiercingLine or Strong_PiercingLine ) ? color.rgb(115, 192, 255) : na , title = 'Piercing Line Candle Color')
+
+
+// 3 Inside Bar 
+
+plotshape((inside_bar_Bull_S or inside_bar_Bull_W) and Show_IB , "3 Inside Bar Bullish",
+      style= shape.labelup,
+      location = location.belowbar,
+      color =color.rgb(25, 199, 31) ,
+      size = size.tiny,
+      text = 'Bu3IB',
+      textcolor = color.rgb(255, 255, 255))
+
+plotshape((inside_bar_Bear_S or inside_bar_Bear_W) and Show_IB, "3 Inside Bar Bearish",
+      style= shape.labeldown,
+      location = location.abovebar,
+      color = color.rgb(219, 48, 48) ,
+      size = size.tiny,
+      text = 'Be3IB',
+      textcolor = color.rgb(255, 255, 255))
+
+barcolor((inside_bar_Bull_S or inside_bar_Bull_W )? color.rgb(115, 192, 255): na , title = 'Bullish 3 Inside Bar Candle Color')
+barcolor((inside_bar_Bear_S or inside_bar_Bear_W) ? color.rgb(0, 0, 0) : na , title = 'Bearish 3 Inside Bar Candle Color')
+
+
+//Engulfing
+plotshape((engulfungSBu or engulfungWBu) and Show_E , "Strong Engulfing Bullish",
+      style= shape.labelup,
+      location = location.belowbar,
+      color =  color.rgb(25, 199, 31) ,
+      size = size.tiny,
+      text = 'BuE',
+      textcolor = color.rgb(255, 255, 255))
+
+plotshape((engulfungSBe or engulfungWBe) and Show_E , "Strong Engulfing Bearish",
+      style= shape.labeldown,
+      location = location.abovebar,
+      color = color.rgb(143, 5, 5)  ,
+      size = size.tiny,
+      text = 'BeE',
+      textcolor = color.rgb(255, 255, 255))
+
+
+barcolor((engulfungWBu or engulfungSBu)? color.rgb(115, 192, 255): na , title = 'Bullish Engulfing Candle Color')
+barcolor((engulfungWBe or engulfungSBe) ? color.rgb(0, 0, 0) : na , title = 'Bearish Engulfing Candle Color')
+
+
+//Pin Bar | Hammer | Shooting Star 
+plotshape((BullPinBar1 or BullPinBar2 ) and Show_PB , 'Bullish PinBar', 
+      location = location.belowbar , 
+      style = shape.labelup  ,
+      color =  color.rgb(25, 199, 31) , 
+      size = size.tiny,
+      text = 'BuPB',
+      textcolor = color.rgb(255, 255, 255))
+
+
+
+plotshape((BearPinBar1 or BearPinBar2) and Show_PB , 'Bearish PinBar', 
+      location = location.abovebar ,
+      style =  shape.labeldown ,
+      color = color.rgb(219, 48, 48)  , 
+      size = size.tiny,
+      text = 'BePB',
+      textcolor = color.rgb(255, 255, 255))
+
+
+barcolor((BullPinBar1 or BullPinBar2 )? color.rgb(115, 192, 255): na , title = 'Bullish Pin Bar Candle Color')
+barcolor((BearPinBar1 or BearPinBar2) ? color.rgb(0, 0, 0) : na , title = 'Bearish Pin Bar Candle Color')

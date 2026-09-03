@@ -1,0 +1,98 @@
+//@version=5
+indicator("Exhaustion Detector by exp3rts💰When KC BOTTIN MIN C-up this indicator *red* LINE💰 A.k.a similar to sma20 c-uP KC TOP MIN", overlay=true)
+
+// === Optimized Inputs for 5-Min Chart ===
+lengthRSI             = input.int(9, title="RSI Length")
+lengthStoch           = input.int(9, title="Stochastic Length")
+lengthVolume          = input.int(14, title="Volume MA Length")
+wickRatio             = input.float(2.0, title="Wick-to-Body Ratio Threshold")
+volumeMultiplier      = input.float(1.3, title="Volume Spike Multiplier")
+atrLength             = input.int(10, title="ATR Length")
+emaTrendLength        = input.int(21, title="Trend EMA Length")
+pivotLookback         = input.int(15, title="Pivot Lookback Period")
+zoneProximityPct      = input.float(1.0, title="Zone Proximity Threshold (%)")
+exhaustionCooldown    = input.int(3, title="Cooldown Bars After Signal")
+minBodySize           = input.float(0.05, title="Min Body Size Filter")
+enableTrendFilter     = input.bool(false, title="Use Trend Filter?")
+enableProximityFilter = input.bool(false, title="Use SR Zone Proximity Filter?")
+showDebug             = input.bool(true, title="Show Debug Labels?")
+
+// === Calculations ===
+rsiVal     = ta.rsi(close, lengthRSI)
+stochK     = ta.stoch(close, high, low, lengthStoch)
+volMA      = ta.sma(volume, lengthVolume)
+atr        = ta.atr(atrLength)
+emaTrend   = ta.ema(close, emaTrendLength)
+
+// === Candle Logic ===
+bodySize     = math.max(math.abs(close - open), 0.001)
+upperWick    = high - math.max(open, close)
+lowerWick    = math.min(open, close) - low
+isDojiOrWick = ((upperWick / bodySize > wickRatio) or (lowerWick / bodySize > wickRatio)) and (bodySize > minBodySize)
+
+// === Volume Spike ===
+volSpike = volume > volMA * volumeMultiplier
+
+// === Momentum Exhaustion ===
+isOverbought = rsiVal > 75 and stochK > 80
+isOversold   = rsiVal < 25 and stochK < 20
+
+// === Support & Resistance Zones ===
+pivotHigh = ta.pivothigh(high, pivotLookback, pivotLookback)
+pivotLow  = ta.pivotlow(low, pivotLookback, pivotLookback)
+var float srHigh = na
+var float srLow  = na
+if not na(pivotHigh)
+    srHigh := pivotHigh
+if not na(pivotLow)
+    srLow := pivotLow
+plot(srHigh, title="Resistance", color=color.red, linewidth=2)
+plot(srLow, title="Support", color=color.green, linewidth=2)
+
+// === Proximity Filters ===
+distanceToHigh   = math.abs(close - srHigh) / close * 100
+distanceToLow    = math.abs(close - srLow) / close * 100
+nearResistance   = distanceToHigh < zoneProximityPct
+nearSupport      = distanceToLow < zoneProximityPct
+
+// === Trend Context ===
+isTrendingUp     = close > emaTrend
+isTrendingDown   = close < emaTrend
+
+// === Raw Exhaustion Detection ===
+rawBuyerExhaustion = isDojiOrWick and volSpike and isOverbought
+rawSellerExhaustion = isDojiOrWick and volSpike and isOversold
+
+// === Final Signal Filtering ===
+buyerExhaustion = rawBuyerExhaustion and (enableProximityFilter ? nearResistance : true) and (enableTrendFilter ? isTrendingDown : true)
+sellerExhaustion = rawSellerExhaustion and (enableProximityFilter ? nearSupport : true) and (enableTrendFilter ? isTrendingUp : true)
+
+// === Cooldown Timer ===
+var int buyerLastSignal = na
+var int sellerLastSignal = na
+buyerCooldownOK = na(buyerLastSignal) or (bar_index - buyerLastSignal) > exhaustionCooldown
+sellerCooldownOK = na(sellerLastSignal) or (bar_index - sellerLastSignal) > exhaustionCooldown
+
+finalBuyerExhaustion = buyerExhaustion and buyerCooldownOK
+finalSellerExhaustion = sellerExhaustion and sellerCooldownOK
+if finalBuyerExhaustion
+    buyerLastSignal := bar_index
+if finalSellerExhaustion
+    sellerLastSignal := bar_index
+
+// === Confidence Scoring ===
+scoreBuyer = (isDojiOrWick ? 1 : 0) + (volSpike ? 1 : 0) + (isOverbought ? 1 : 0)
+scoreSeller = (isDojiOrWick ? 1 : 0) + (volSpike ? 1 : 0) + (isOversold ? 1 : 0)
+
+// === Visualization ===
+plotshape(finalBuyerExhaustion, location=location.abovebar, color=color.rgb(30, 112, 253), style=shape.arrowdown, title="Buyer Exhaustion")
+plotshape(finalSellerExhaustion, location=location.belowbar, color=color.rgb(255, 39, 39), style=shape.arrowup, title="Seller Exhaustion")
+
+bgcolor(finalBuyerExhaustion ? color.new(#0116ff, 85) : na, title="Buyer Zone")
+bgcolor(finalSellerExhaustion ? color.new(#ff0303, 85) : na, title="Seller Zone")
+
+// === Debug Labels ===
+if showDebug and finalBuyerExhaustion
+    label.new(bar_index, high, "BE: " + str.tostring(scoreBuyer), style=label.style_label_down, color=color.rgb(0, 51, 255), textcolor=color.white, size=size.small)
+if showDebug and finalSellerExhaustion
+    label.new(bar_index, low, "SE: " + str.tostring(scoreSeller), style=label.style_label_up, color=color.rgb(255, 24, 24), textcolor=color.white, size=size.small)
