@@ -1,5 +1,5 @@
 //@version=5
-indicator(title="Bollinger Band ribbon", shorttitle="BB ribbon", precision=6, overlay=true)
+indicator(title="Bollinger Band ribbon", shorttitle="BB ribbon [H+L+C)/3]", precision=6, overlay=true)
 
 // Inputs
 src = input.source(hlc3, title="Source")
